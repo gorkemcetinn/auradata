@@ -37,7 +37,7 @@ The entire analysis pipeline lives in an **n8n workflow** — no custom backend 
 | **Charts** | [Apache ECharts](https://echarts.apache.org) via `echarts-for-react` |
 | **Auth & DB** | [Supabase](https://supabase.com) (Auth + Postgres) |
 | **AI Orchestration** | [n8n](https://n8n.io) self-hosted workflow |
-| **LLM APIs** | [Groq](https://groq.com) (Llama 3) · [Gemini](https://ai.google.dev) (optional) |
+| **LLM APIs** | [Groq](https://groq.com) (Llama 3) |
 | **Stats Service** | Python [Flask](https://flask.palletsprojects.com) + [pandas](https://pandas.pydata.org) |
 | **Infrastructure** | [Docker Compose](https://docs.docker.com/compose/) |
 
