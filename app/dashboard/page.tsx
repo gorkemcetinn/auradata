@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../utils/supabase";
-import { 
-  Plus, FileBarChart, Trash2, Clock, LogOut, Loader2, LayoutTemplate, Sparkles 
+import {
+  Plus, FileBarChart, Trash2, Clock, LogOut, Loader2, LayoutTemplate, Sparkles
 } from "lucide-react";
 import ThemeToggle from "../components/ThemeToggle";
 import LanguageToggle from "../components/LanguageToggle";
@@ -153,7 +153,7 @@ export default function DashboardPage() {
         router.replace("/login");
         return;
       }
-      
+
       setUser({
         name: user.user_metadata?.full_name || user.email?.split("@")[0],
         email: user.email,
@@ -208,7 +208,7 @@ export default function DashboardPage() {
 
   // Avatar Component
   const AvatarEl = () => {
-    if (user?.avatar) return <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}/>;
+    if (user?.avatar) return <img src={user.avatar} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />;
     const initials = String(user?.name || "?").substring(0, 2).toUpperCase();
     return <span>{initials}</span>;
   };
@@ -223,7 +223,7 @@ export default function DashboardPage() {
     <>
       <style>{styles}</style>
       <div className="dash-root">
-        
+
         {/* TOPBAR */}
         <header className="topbar">
           <div className="topbar-brand">
@@ -234,28 +234,28 @@ export default function DashboardPage() {
             <ThemeToggle />
             <LanguageToggle />
             <div className="user-menu" ref={userMenuRef}>
-            <div className="user-avatar" onClick={() => setUserMenuOpen(!userMenuOpen)}>
-              <AvatarEl />
-            </div>
-            
-            {userMenuOpen && (
-              <div className="user-dropdown">
-                <div className="user-dropdown-header">
-                  <div className="user-dropdown-name">{user?.name}</div>
-                  <div className="user-dropdown-email">{user?.email}</div>
-                </div>
-                <button className="user-dropdown-item" onClick={() => router.push("/dashboard")}>
-                  Dashboard
-                </button>
-                <button className="user-dropdown-item" onClick={() => router.push("/settings")}>
-                  Ayarlar
-                </button>
-                <button className="user-dropdown-item danger" onClick={handleSignOut}>
-                  <LogOut size={14} /> Çıkış Yap
-                </button>
+              <div className="user-avatar" onClick={() => setUserMenuOpen(!userMenuOpen)}>
+                <AvatarEl />
               </div>
-            )}
-          </div>
+
+              {userMenuOpen && (
+                <div className="user-dropdown">
+                  <div className="user-dropdown-header">
+                    <div className="user-dropdown-name">{user?.name}</div>
+                    <div className="user-dropdown-email">{user?.email}</div>
+                  </div>
+                  <button className="user-dropdown-item" onClick={() => router.push("/dashboard")}>
+                    Dashboard
+                  </button>
+                  <button className="user-dropdown-item" onClick={() => router.push("/settings")}>
+                    Ayarlar
+                  </button>
+                  <button className="user-dropdown-item danger" onClick={handleSignOut}>
+                    <LogOut size={14} /> Çıkış Yap
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -269,12 +269,12 @@ export default function DashboardPage() {
             <>
               <div className="dash-header">
                 <div className="dash-title-wrap">
-                  <span className="dash-eyebrow"><Sparkles size={12}/> Çalışma Alanı</span>
+                  <span className="dash-eyebrow"><Sparkles size={12} /> Çalışma Alanı</span>
                   <h1 className="dash-title">Raporlarınız</h1>
                 </div>
                 <div className="flex items-center gap-4">
-                  <button 
-                    className="btn-primary !bg-[#faf8f5] !text-[#111110] !border !border-[rgba(17,17,16,0.22)] hover:!bg-[#f0ebe4] hover:!border-[#111110]" 
+                  <button
+                    className="btn-primary !bg-[#faf8f5] !text-[#111110] !border !border-[rgba(17,17,16,0.22)] hover:!bg-[#f0ebe4] hover:!border-[#111110]"
                     onClick={() => router.push("/analyzer")}
                   >
                     <Sparkles size={16} className="text-[#c97b5a]" /> Hızlı Analiz
@@ -299,8 +299,8 @@ export default function DashboardPage() {
                           {formatDate(report.updated_at)}
                         </div>
                         <div className="report-actions">
-                          <button 
-                            className="btn-delete" 
+                          <button
+                            className="btn-delete"
                             onClick={(e) => handleDelete(e, report.id)}
                             title="Raporu Sil"
                           >

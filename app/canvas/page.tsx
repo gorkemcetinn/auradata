@@ -478,6 +478,29 @@ const styles = `
     0%, 100% { box-shadow: 0 0 0 2px rgba(201,123,90,0.3); }
     50% { box-shadow: 0 0 0 6px rgba(201,123,90,0.1); }
   }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .canvas-body {
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-left {
+      width: 100%;
+      border-right: none;
+      border-bottom: 0.5px solid var(--border-mid);
+      max-height: 200px;
+    }
+    .sidebar-right {
+      width: 100%;
+      border-left: none;
+      border-top: 0.5px solid var(--border-mid);
+      max-height: 300px;
+    }
+    .canvas-main {
+      min-height: 500px;
+    }
+  }
 `;
 
 /* ─────────────────────────────────────────────

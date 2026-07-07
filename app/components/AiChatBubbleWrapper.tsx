@@ -5,7 +5,7 @@ import AiChatBubble from "./AiChatBubble";
 
 export default function AiChatBubbleWrapper() {
   const pathname = usePathname();
-  // Canvas sayfasında gösterme — Canvas kendi AI asistanını kullanıyor
-  if (pathname?.startsWith("/canvas")) return null;
+  // Canvas sayfasında gösterme (kendi AI asistanını kullanıyor) ve Auth sayfasında gösterme
+  if (pathname?.startsWith("/canvas") || pathname?.startsWith("/auth")) return null;
   return <AiChatBubble />;
 }

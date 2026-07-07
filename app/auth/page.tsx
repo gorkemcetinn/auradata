@@ -30,6 +30,23 @@ const styles = `
     --shadow:        0 12px 60px rgba(17,17,16,0.10);
   }
 
+  .dark {
+    --cream:         #111110;
+    --cream-dark:    #1a1a19;
+    --ink:           #faf8f5;
+    --ink-soft:      #e0dbd5;
+    --ink-muted:     #999490;
+    --blush:         #8a5e45;
+    --rose:          #d98a6a;
+    --rose-mid:      #c97b5a;
+    --rose-light:    #2a1f1a;
+    --border:        rgba(255,255,255,0.08);
+    --border-mid:    rgba(255,255,255,0.14);
+    --border-strong: rgba(255,255,255,0.22);
+    --white:         #181817;
+    --shadow:        0 12px 60px rgba(0,0,0,0.50);
+  }
+
   body {
     background: var(--cream);
     font-family: 'DM Sans', sans-serif;
