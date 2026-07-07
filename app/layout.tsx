@@ -15,6 +15,28 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AuraData",
   description: "Veri analizi ve görselleştirme platformu",
+  openGraph: {
+    title: "AuraData - Veri Analizi",
+    description: "Veri analizi ve görselleştirme platformu ile verilerinizi anlamlandırın.",
+    url: "https://auradata.vercel.app",
+    siteName: "AuraData",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "AuraData Önizleme",
+      },
+    ],
+    locale: "tr_TR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AuraData",
+    description: "Veri analizi ve görselleştirme platformu",
+    images: ["/og-image.png"],
+  },
 };
 
 import AiChatBubbleWrapper from "./components/AiChatBubbleWrapper";
