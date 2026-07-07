@@ -128,6 +128,27 @@ const styles = `
 
   /* Loading */
   .loading-container { display: flex; align-items: center; justify-content: center; min-height: 50vh; color: var(--rose); }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 768px) {
+    .dash-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.5rem;
+    }
+    .main-content {
+      padding: 2rem 1rem;
+    }
+    .reports-grid {
+      grid-template-columns: 1fr;
+    }
+    .topbar {
+      padding: 0 1rem;
+    }
+    .dash-title {
+      font-size: 1.8rem;
+    }
+  }
 `;
 
 interface Report {
