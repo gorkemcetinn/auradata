@@ -417,6 +417,23 @@ const styles = `
     background: radial-gradient(circle, rgba(201,123,90,0.15) 0%, transparent 70%);
     pointer-events: none;
   }
+
+  /* ─── MOBILE RESPONSIVE ─── */
+  @media (max-width: 850px) {
+    .login-root {
+      grid-template-columns: 1fr;
+    }
+    .left-panel {
+      display: none;
+    }
+    .right-panel {
+      padding: 2rem;
+    }
+    .right-inner {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+  }
 `;
 
 /* ─── STATIC DATA ─── */
