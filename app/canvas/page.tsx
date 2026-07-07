@@ -481,6 +481,26 @@ const styles = `
 
   /* ── MOBILE RESPONSIVE ── */
   @media (max-width: 900px) {
+    .topbar {
+      height: auto;
+      flex-wrap: wrap;
+      padding: 0.5rem 1rem;
+      gap: 0.5rem;
+    }
+    .topbar-brand {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .topbar-doc {
+      display: none; /* Mobilde çok yer kaplamasın */
+    }
+    .topbar-actions {
+      width: 100%;
+      justify-content: space-between;
+      overflow-x: auto;
+      padding-top: 0.5rem;
+      border-top: 0.5px solid var(--border-mid);
+    }
     .canvas-body {
       flex-direction: column;
       overflow-y: auto;
@@ -489,16 +509,20 @@ const styles = `
       width: 100%;
       border-right: none;
       border-bottom: 0.5px solid var(--border-mid);
-      max-height: 200px;
+      height: auto;
+      max-height: 140px;
+      overflow-x: auto;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 1rem;
+      padding: 0.5rem;
     }
     .sidebar-right {
-      width: 100%;
-      border-left: none;
-      border-top: 0.5px solid var(--border-mid);
-      max-height: 300px;
+      display: none; /* Mobilde özellikleri kapatıyoruz karmaşayı önlemek için */
     }
     .canvas-main {
-      min-height: 500px;
+      min-height: 800px;
+      overflow: auto;
     }
   }
 `;
