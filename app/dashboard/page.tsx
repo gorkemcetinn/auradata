@@ -6,6 +6,8 @@ import { supabase } from "../utils/supabase";
 import { 
   Plus, FileBarChart, Trash2, Clock, LogOut, Loader2, LayoutTemplate, Sparkles 
 } from "lucide-react";
+import ThemeToggle from "../components/ThemeToggle";
+import LanguageToggle from "../components/LanguageToggle";
 
 /* ─────────────────────────────────────────────
    AuraData Design Tokens — Tüm siteyle uyumlu
@@ -228,8 +230,10 @@ export default function DashboardPage() {
             <div className="topbar-logo" onClick={() => router.push("/")} style={{ cursor: "pointer" }} title="Ana Sayfaya Dön">A</div>
             <span className="topbar-title">AuraData</span>
           </div>
-          
-          <div className="user-menu" ref={userMenuRef}>
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <ThemeToggle />
+            <LanguageToggle />
+            <div className="user-menu" ref={userMenuRef}>
             <div className="user-avatar" onClick={() => setUserMenuOpen(!userMenuOpen)}>
               <AvatarEl />
             </div>
@@ -252,6 +256,7 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+          </div>
         </header>
 
         {/* MAIN CONTENT */}
@@ -267,9 +272,17 @@ export default function DashboardPage() {
                   <span className="dash-eyebrow"><Sparkles size={12}/> Çalışma Alanı</span>
                   <h1 className="dash-title">Raporlarınız</h1>
                 </div>
-                <button className="btn-primary" onClick={() => router.push("/canvas")}>
-                  <Plus size={16} /> Yeni Rapor
-                </button>
+                <div className="flex items-center gap-4">
+                  <button 
+                    className="btn-primary !bg-[#faf8f5] !text-[#111110] !border !border-[rgba(17,17,16,0.22)] hover:!bg-[#f0ebe4] hover:!border-[#111110]" 
+                    onClick={() => router.push("/analyzer")}
+                  >
+                    <Sparkles size={16} className="text-[#c97b5a]" /> Hızlı Analiz
+                  </button>
+                  <button className="btn-primary" onClick={() => router.push("/canvas")}>
+                    <Plus size={16} /> Yeni Rapor
+                  </button>
+                </div>
               </div>
 
               {reports.length > 0 ? (

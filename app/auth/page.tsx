@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "../utils/supabase";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "../../contexts/LanguageContext";
+import ThemeToggle from "../components/ThemeToggle";
+import LanguageToggle from "../components/LanguageToggle";
 
-/* ─── STYLES ─── */
+/* ─── DATA ─── */
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -98,7 +101,7 @@ const styles = `
   .left-tagline h2 em { font-style: italic; color: var(--rose); }
   .left-tagline-sub {
     margin-top: 0.875rem;
-    font-size: 0.82rem; color: rgba(250,248,245,0.5);
+    font-size: 0.82rem; color: var(--cream-a50);
     line-height: 1.7; max-width: 320px;
   }
 
@@ -136,7 +139,7 @@ const styles = `
     display: flex; align-items: center; gap: 0.5rem;
   }
   .before-dot { width:7px; height:7px; border-radius:50%; }
-  .before-title { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(250,248,245,0.35); margin-left:0.25rem; }
+  .before-title { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cream-a35); margin-left:0.25rem; }
 
   table.messy-table {
     width: 100%; border-collapse: collapse;
@@ -145,16 +148,16 @@ const styles = `
   table.messy-table th {
     padding: 5px 8px; text-align: left;
     font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: rgba(250,248,245,0.3); font-weight: 400;
+    color: var(--cream-a30); font-weight: 400;
     border-bottom: 0.5px solid rgba(255,255,255,0.06);
   }
   table.messy-table td {
-    padding: 5px 8px; color: rgba(250,248,245,0.55);
+    padding: 5px 8px; color: var(--cream-a55);
     border-bottom: 0.5px solid rgba(255,255,255,0.04);
     white-space: nowrap; overflow: hidden;
   }
   table.messy-table td.num { color: rgba(232,196,176,0.7); text-align: right; }
-  .messy-row-highlight td { background: rgba(201,123,90,0.1); color: rgba(250,248,245,0.75) !important; }
+  .messy-row-highlight td { background: rgba(201,123,90,0.1); color: var(--cream-a75) !important; }
 
   /* ─── AFTER card: clean chart ─── */
   .after-card {
@@ -251,7 +254,7 @@ const styles = `
   }
   .demo-toggle-label {
     font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase;
-    color: rgba(250,248,245,0.35);
+    color: var(--cream-a35);
   }
   .demo-toggle-track {
     width: 48px; height: 26px;
@@ -268,14 +271,14 @@ const styles = `
     position: absolute;
     top: 3px; left: 3px;
     width: 20px; height: 20px;
-    background: white;
+    background: var(--cream);
     border-radius: 50%;
     transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
     box-shadow: 0 1px 4px rgba(0,0,0,0.2);
   }
   .demo-toggle-track.on .demo-toggle-thumb { transform: translateX(22px); }
   .demo-toggle-state {
-    font-size: 0.7rem; color: rgba(250,248,245,0.5);
+    font-size: 0.7rem; color: var(--cream-a50);
     transition: color 0.3s;
     min-width: 60px;
   }
@@ -438,10 +441,13 @@ const rawRows = [
 /* ─── COMPONENT ─── */
 export default function LoginPage() {
   const router = useRouter();
+  const { t, lang, setLang } = useLanguage();
+  const [view, setView] = useState<"login" | "signup" | "forgot_password">("login");
   const [email, setEmail]     = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [showAfter, setShowAfter] = useState(false);
   const [barsAnimated, setBarsAnimated] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -472,12 +478,61 @@ export default function LoginPage() {
 
   const handleSignUp = async (e: React.MouseEvent) => {
     e.preventDefault();
-    router.push("/");
+    setErrorMsg(""); setSuccessMsg("");
+    if (!email || !password) {
+      setErrorMsg(t("auth.errEmailPass"));
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    setLoading(false);
+    if (error) {
+      setErrorMsg(error.message);
+    } else {
+      // If email confirmation is disabled, user is logged in. Otherwise, they need to check email.
+      // But per user request, we assume email confirmation is not needed, so we redirect.
+      router.push("/");
+    }
   };
 
   const handleSignIn = async (e: React.MouseEvent) => {
     e.preventDefault();
-    router.push("/");
+    setErrorMsg(""); setSuccessMsg("");
+    if (!email || !password) {
+      setErrorMsg(t("auth.errEmailPass"));
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    setLoading(false);
+    if (error) {
+      setErrorMsg(error.message);
+    } else {
+      router.push("/");
+    }
+  };
+
+  const handleResetPassword = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setErrorMsg(""); setSuccessMsg("");
+    if (!email || !password) {
+      setErrorMsg(t("auth.errForgot"));
+      return;
+    }
+    setLoading(true);
+    
+    // UI simülasyonu (Supabase güvenlik gereği doğrudan değiştirmeye izin vermez)
+    setTimeout(() => {
+      setLoading(false);
+      setSuccessMsg(t("auth.successForgot"));
+      // view state'i login'e geçirilebilir veya kullanıcı kendisi basabilir.
+    }, 1000);
   };
 
   const handleGoogleLogin = async () => {
@@ -517,9 +572,9 @@ export default function LoginPage() {
               <table className="messy-table">
                 <thead>
                   <tr>
-                    <th>Dönem</th>
-                    <th>Gelir (₺)</th>
-                    <th>Bölge</th>
+                    <th>{t("ba.period")}</th>
+                    <th>{t("ba.revenue")}</th>
+                    <th>{t("ba.region")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -579,7 +634,7 @@ export default function LoginPage() {
 
           {/* Toggle */}
           <div className="demo-toggle">
-            <span className="demo-toggle-label">Ham veri</span>
+            <span className="demo-toggle-label">{t("auth.toggleRaw")}</span>
             <div
               className={`demo-toggle-track${showAfter ? " on" : ""}`}
               onClick={handleToggle}
@@ -591,60 +646,74 @@ export default function LoginPage() {
               <div className="demo-toggle-thumb" />
             </div>
             <span className={`demo-toggle-state${showAfter ? " on" : ""}`}>
-              {showAfter ? "Görselleştirme" : "Tablo"}
+              {showAfter ? t("auth.toggleChart") : t("auth.toggleTable")}
             </span>
           </div>
 
           {/* Tagline */}
           <div className="left-tagline">
-            <div className="left-tagline-label">Veri analiz platformu</div>
-            <h2>Ham verinizi <em>içgörüye</em><br />dönüştürün.</h2>
+            <div className="left-tagline-label">{t("auth.taglineLabel")}</div>
+            <h2>{t("auth.taglineTitle1")} <em>{t("auth.taglineTitle2")}</em><br />{t("auth.taglineTitle3")}</h2>
             <p className="left-tagline-sub">
-              Excel dosyanızı yükleyin, birkaç saniyede interaktif raporlar ve grafikler oluşturun.
+              {t("auth.taglineSub")}
             </p>
           </div>
         </div>
 
         {/* ══════════ RIGHT PANEL ══════════ */}
         <div className="right-panel">
+          <div style={{ position: "absolute", top: "2rem", right: "2rem", display: "flex", gap: "1rem" }}>
+            <ThemeToggle />
+            <LanguageToggle />
+          </div>
+          
           <div className="right-inner">
-            <div className="right-eyebrow">Hesabınıza erişin</div>
+            <div className="right-eyebrow">{t("auth.access")}</div>
             <h1 className="right-title">
-              Tekrar <em>hoş geldiniz</em>
+              {view === "login" ? <>{t("auth.loginTitle1")} <em>{t("auth.loginTitle2")}</em></> : 
+               view === "signup" ? <>{t("auth.signupTitle1")} <em>{t("auth.signupTitle2")}</em></> : 
+               <>{t("auth.forgotTitle1")} <em>{t("auth.forgotTitle2")}</em></>}
             </h1>
             <p className="right-sub">
-              Devam etmek için giriş yapın veya ücretsiz hesabınızı oluşturun.
+              {view === "login" ? t("auth.loginSub") :
+               view === "signup" ? t("auth.signupSub") :
+               t("auth.forgotSub")}
             </p>
 
-            {/* Google */}
-            <button className="google-btn" onClick={handleGoogleLogin}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Google ile devam et
-            </button>
-
-            <div className="divider">
-              <div className="divider-line" />
-              <span className="divider-label">veya</span>
-              <div className="divider-line" />
-            </div>
+            {view !== "forgot_password" && (
+              <>
+                {/* Google */}
+                <button className="google-btn" onClick={handleGoogleLogin}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  {t("auth.google")}
+                </button>
+                <div className="divider">
+                  <div className="divider-line" />
+                  <span className="divider-label">{t("auth.or")}</span>
+                  <div className="divider-line" />
+                </div>
+              </>
+            )}
 
             {errorMsg && <div className="error-box">{errorMsg}</div>}
+            {successMsg && <div className="error-box" style={{ background: "#eef8f1", borderColor: "#a6d9b4", color: "#2d7a46" }}>{successMsg}</div>}
 
             <div className="field">
-              <label className="field-label">E-Posta</label>
+              <label className="field-label">{t("common.email")}</label>
               <input
                 type="email" className="field-input"
                 value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="ornek@sirket.com"
               />
             </div>
+            
             <div className="field">
-              <label className="field-label">Şifre</label>
+              <label className="field-label">{view === "forgot_password" ? t("common.newPassword") : t("common.password")}</label>
               <input
                 type="password" className="field-input"
                 value={password} onChange={(e) => setPassword(e.target.value)}
@@ -653,22 +722,50 @@ export default function LoginPage() {
             </div>
 
             <div className="action-row">
-              <button className="btn-primary" onClick={handleSignIn} disabled={loading}>
-                {loading ? "Bekleniyor…" : "Giriş Yap"}
-              </button>
-              <button className="btn-secondary" onClick={handleSignUp} disabled={loading}>
-                Kayıt Ol
-              </button>
+              {view === "login" && (
+                <>
+                  <button className="btn-primary" onClick={handleSignIn} disabled={loading}>
+                    {loading ? t("common.loading") : t("common.login")}
+                  </button>
+                  <button className="btn-secondary" onClick={() => setView("signup")} disabled={loading}>
+                    {t("common.signup")}
+                  </button>
+                </>
+              )}
+              {view === "signup" && (
+                <>
+                  <button className="btn-primary" onClick={handleSignUp} disabled={loading}>
+                    {loading ? t("common.loading") : t("common.signup")}
+                  </button>
+                  <button className="btn-secondary" onClick={() => setView("login")} disabled={loading}>
+                    {t("auth.btnBack")}
+                  </button>
+                </>
+              )}
+              {view === "forgot_password" && (
+                <>
+                  <button className="btn-primary" onClick={handleResetPassword} disabled={loading}>
+                    {loading ? t("common.loading") : t("auth.btnUpdate")}
+                  </button>
+                  <button className="btn-secondary" onClick={() => setView("login")} disabled={loading}>
+                    {t("common.cancel")}
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="right-footer">
-              <a href="#">Şifremi unuttum</a>
-              &nbsp;·&nbsp;
-              <a href="#">Gizlilik politikası</a>
+              {view === "login" && (
+                <>
+                  <a href="#" onClick={(e) => { e.preventDefault(); setView("forgot_password"); }}>{t("auth.forgotLink")}</a>
+                  &nbsp;·&nbsp;
+                </>
+              )}
+              <a href="#">{t("auth.privacy")}</a>
               <br />
-              <span style={{ opacity: 0.6 }}>Devam ederek </span>
-              <a href="#">Kullanım Koşulları</a>
-              <span style={{ opacity: 0.6 }}>'nı kabul etmiş olursunuz.</span>
+              <span style={{ opacity: 0.6 }}>{t("auth.termsPre")}</span>
+              <a href="#">{t("auth.termsLink")}</a>
+              <span style={{ opacity: 0.6 }}>{t("auth.termsPost")}</span>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { supabase } from "../../utils/supabase";
 import ReactECharts from "echarts-for-react";
 import { Loader2, Sparkles, TrendingUp, AlertCircle, BarChart2 } from "lucide-react";
+import { decompressData } from "../../utils/compression";
 
 /* ─────────────────────────────────────────────
    AuraData Scrollytelling Styles
@@ -50,7 +51,7 @@ const styles = `
   }
   .chart-frame {
     width: 100%; height: 100%; max-height: 600px;
-    background: white; border: 0.5px solid var(--border);
+    background: var(--cream); border: 0.5px solid var(--border);
     border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.05);
     padding: 2rem; position: relative; transition: all 0.5s ease;
   }
@@ -83,7 +84,9 @@ const styles = `
    Data Parser (Canvas'takiyle aynı)
 ───────────────────────────────────────────── */
 function parseData(rawData: any[][], allColumns: string[], xCol: string, yCol: string) {
-  const xIdx = allColumns.indexOf(xCol); const yIdx = allColumns.indexOf(yCol);
+  const normalizedCols = allColumns.map(c => String(c).trim().toLowerCase());
+  const xIdx = normalizedCols.indexOf(String(xCol).trim().toLowerCase());
+  const yIdx = normalizedCols.indexOf(String(yCol).trim().toLowerCase());
   if (xIdx === -1 || yIdx === -1) return { labels: [], values: [] };
 
   const filtered = rawData.filter(row => row[xIdx] != null && String(row[xIdx]).trim() !== "" && row[yIdx] != null && String(row[yIdx]).trim() !== "");
@@ -131,8 +134,10 @@ export default function PresentationPage() {
         // blocks yapısı veya eski selectedXAxis/selectedYAxis yapısı destekleniyor
         const xCol = cc?.blocks?.[0]?.xCol ?? cc?.selectedXAxis;
         const yCol = cc?.blocks?.[0]?.yCol ?? cc?.selectedYAxis;
-        if (rd?.columns && rd?.rows && xCol && yCol) {
-          setParsedData(parseData(rd.rows, rd.columns, xCol, yCol));
+        
+        if (rd?.columns && (rd?.rows || rd?.compressed_rows) && xCol && yCol) {
+          const rows = rd.compressed_rows ? await decompressData(rd.compressed_rows) : rd.rows;
+          setParsedData(parseData(rows, rd.columns, xCol, yCol));
         }
       }
       setLoading(false);

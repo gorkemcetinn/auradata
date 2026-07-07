@@ -3,6 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --nav-bg: rgba(250, 248, 245, 0.85);
+  --cream-a60: rgba(250, 248, 245, 0.6);
+  --cream-a15: rgba(250, 248, 245, 0.15);
+  --cream-a20: rgba(250, 248, 245, 0.2);
+  --cream-a55: rgba(250, 248, 245, 0.55);
+  --cream-a50: rgba(250, 248, 245, 0.5);
+  --cream-a40: rgba(250, 248, 245, 0.4);
+  --cream-a35: rgba(250, 248, 245, 0.35);
+  --cream-a30: rgba(250, 248, 245, 0.3);
+  --cream-a75: rgba(250, 248, 245, 0.75);
 }
 
 @theme inline {
@@ -23,4 +33,37 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark {
+  --background: #0a0a0a !important;
+  --foreground: #ededed !important;
+  
+  /* AuraData Palette Overrides */
+  --cream: #111110 !important;
+  --cream-dark: #1a1a19 !important;
+  --ink: #faf8f5 !important;
+  --ink-soft: #b5b7ba !important;
+  --ink-muted: #737373 !important;
+  --blush: #4a2818 !important;
+  --rose: #e09676 !important;
+  --border: rgba(250,248,245,0.1) !important;
+  --border-strong: rgba(250,248,245,0.2) !important;
+  --border-mid: rgba(250,248,245,0.14) !important;
+
+  --nav-bg: rgba(17, 17, 16, 0.85) !important;
+  --cream-a60: rgba(17, 17, 16, 0.6) !important;
+  --cream-a15: rgba(17, 17, 16, 0.15) !important;
+  --cream-a20: rgba(17, 17, 16, 0.2) !important;
+  --cream-a55: rgba(17, 17, 16, 0.55) !important;
+  --cream-a50: rgba(17, 17, 16, 0.5) !important;
+  --cream-a40: rgba(17, 17, 16, 0.4) !important;
+  --cream-a35: rgba(17, 17, 16, 0.35) !important;
+  --cream-a30: rgba(17, 17, 16, 0.3) !important;
+  --cream-a75: rgba(17, 17, 16, 0.75) !important;
+}
+
+body, .aura-root, .dash-root, .settings-root, .topbar, .user-dropdown, .right-panel, .left-panel, .process-section {
+  transition: background-color 0.3s ease, background 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
 }

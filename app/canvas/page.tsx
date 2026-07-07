@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from "react";
 import * as XLSX from "xlsx";
 import ReactECharts from "echarts-for-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -15,9 +15,13 @@ import {
   Palette, ChevronDown, ChevronRight, ChevronLeft, ArrowLeft, Sparkles, Grid3X3, Save, LogOut, Loader2,
   Plus, Trash2, Copy, FileText, Image as ImageIcon, Maximize, Smartphone, Monitor,
   Share2, FileImage, Link2, LayoutList, Layers,
-  Lock, Unlock, ArrowUpToLine, ArrowDownToLine, Magnet, Undo2, Redo2, Table, Square, Type
+  Lock, Unlock, ArrowUpToLine, ArrowDownToLine, Magnet, Undo2, Redo2, Table, Square, Type, Bot, X
 } from "lucide-react";
-
+import CanvasAiPanel from "../components/CanvasAiPanel";
+import { useLanguage } from "../../contexts/LanguageContext";
+import { compressData, decompressData } from "../utils/compression";
+import ThemeToggle from "../components/ThemeToggle";
+import LanguageToggle from "../components/LanguageToggle";
 /* ─────────────────────────────────────────────
    Design Tokens & CSS
 ───────────────────────────────────────────── */
@@ -55,6 +59,11 @@ const styles = `
     background: var(--cream); color: var(--ink);
     font-family: 'DM Sans', sans-serif;
     font-weight: 300; overflow: hidden;
+  }
+  .noise-overlay {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; z-index: 9999; opacity: 0.035; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
 
   /* ── TOPBAR ── */
@@ -206,7 +215,7 @@ const styles = `
   .share-menu-wrap { position: relative; }
   .share-dropdown {
     position: absolute; top: calc(100% + 8px); right: 0;
-    background: white; border: 0.5px solid var(--border-mid);
+    background: var(--cream); border: 0.5px solid var(--border-mid);
     border-radius: 6px; box-shadow: 0 12px 32px rgba(17,17,16,0.12);
     width: 240px; z-index: 200; overflow: hidden;
     animation: fadeUp 0.15s ease;
@@ -236,7 +245,7 @@ const styles = `
   .pdf-mode-icon {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 0.25rem; padding: 0.5rem; border-radius: 4px; border: 1.5px solid var(--border-mid);
-    cursor: pointer; background: white; transition: all 0.15s; color: var(--ink-muted);
+    cursor: pointer; background: var(--cream); transition: all 0.15s; color: var(--ink-muted);
   }
   .pdf-mode-icon.active { border-color: var(--ink); color: var(--ink); background: var(--cream); }
   .pdf-mode-icon:hover:not(.active) { border-color: var(--border-strong); color: var(--ink-soft); }
@@ -244,7 +253,7 @@ const styles = `
 
   /* ── UPLOAD ZONE ── */
   .upload-zone {
-    border: 0.5px dashed var(--border-strong); border-radius: 4px;
+    border: 0.5px dashed var(--border-strong); border-radius: 2px;
     padding: 1.25rem 1rem; text-align: center; background: var(--cream);
     cursor: pointer; transition: all 0.2s; margin-bottom: 1.25rem; display: block;
   }
@@ -320,7 +329,6 @@ const styles = `
   }
   .a4-page.portrait { width: 794px; height: 1123px; }
   .a4-page.landscape { width: 1123px; height: 794px; }
-  
   /* ── RND BLOCKS ── */
   .block-rnd {
     border: 1px solid transparent;
@@ -363,7 +371,7 @@ const styles = `
   .block-kpi {
     display: flex; flex-direction: column; justify-content: center;
     background: var(--white); border: 0.5px solid var(--border-mid);
-    border-radius: 4px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    border-radius: 2px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
     width: 100%; height: 100%;
   }
   .block-kpi-title { font-size: 0.75rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
@@ -530,6 +538,12 @@ interface BlockData {
   metaType?: "page" | "date";
 }
 
+interface CanvasState {
+  blocks: BlockData[];
+  orientation: "portrait" | "landscape";
+  pageCount: number;
+}
+
 interface ParseResult {
   labels: string[];
   values: number[];
@@ -543,8 +557,10 @@ interface ParseResult {
 ───────────────────────────────────────────── */
 function parseData(rawData: any[][], allColumns: string[], xCol?: string, yCol?: string): ParseResult {
   if (!xCol || !yCol) return { labels: [], values: [], totalRows: rawData.length, cleanedRows: 0, kpiSum: 0 };
-  const xIdx = allColumns.indexOf(xCol);
-  const yIdx = allColumns.indexOf(yCol);
+  const normalizedCols = allColumns.map(c => String(c).trim().toLowerCase());
+  const xIdx = normalizedCols.indexOf(String(xCol).trim().toLowerCase());
+  const yIdx = normalizedCols.indexOf(String(yCol).trim().toLowerCase());
+  
   if (xIdx === -1 || yIdx === -1)
     return { labels: [], values: [], totalRows: rawData.length, cleanedRows: 0, kpiSum: 0 };
 
@@ -767,9 +783,10 @@ function useHistory<T>(initialState: T) {
 /* ─────────────────────────────────────────────
    MAIN COMPONENT
 ───────────────────────────────────────────── */
-export default function CanvasUI() {
+function CanvasUI() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, lang, setLang } = useLanguage();
   const reportId = searchParams.get("id");
 
   // Auth & Meta
@@ -782,8 +799,7 @@ export default function CanvasUI() {
   const [pdfMode, setPdfMode] = useState<"multipage" | "summary-table">("summary-table");
   const [isGenerating, setIsGenerating] = useState(false);
   const [shareLink, setShareLink] = useState<string | null>(null);
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
-  const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
   const [canvasZoom, setCanvasZoom] = useState(100);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
   const shareMenuRef = useRef<HTMLDivElement>(null);
@@ -804,18 +820,43 @@ export default function CanvasUI() {
   const [data, setData] = useState<any[][]>([]);
   const [columns, setColumns] = useState<string[]>([]);
   
-  // Canvas State
-  const history = useHistory<BlockData[]>([]);
-  const blocks = history.state;
-  const setBlocks = history.set;
+  // Multi-CSV State
+  const [uploadedFiles, setUploadedFiles] = useState<{ id: string, name: string, data: any[][], columns: string[] }[]>([]);
+  const [activeFileId, setActiveFileId] = useState<string | null>(null);
+  const [isFileModalOpen, setIsFileModalOpen] = useState(false);
+  
+  // Canvas State — full history (blocks + orientation + pageCount)
+  const history = useHistory<CanvasState>({ blocks: [], orientation: "portrait", pageCount: 1 });
+  const canvasState = history.state;
+  const blocks = canvasState.blocks;
+  const canvasOrientation = canvasState.orientation;
+  const pageCount = canvasState.pageCount;
+
+  // Setters that push to history
+  const setCanvasState = history.set;
+  const setBlocks = (updater: BlockData[] | ((prev: BlockData[]) => BlockData[])) =>
+    setCanvasState(prev => ({ ...prev, blocks: typeof updater === "function" ? updater(prev.blocks) : updater }));
+  const setCanvasOrientation = (o: "portrait" | "landscape") =>
+    setCanvasState(prev => ({ ...prev, orientation: o }));
+  const setPageCount = (updater: number | ((prev: number) => number)) =>
+    setCanvasState(prev => ({ ...prev, pageCount: typeof updater === "function" ? updater(prev.pageCount) : updater }));
+
   const [isGridSnapEnabled, setIsGridSnapEnabled] = useState(false);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [highlightedBlockId, setHighlightedBlockId] = useState<string | null>(null);
   const highlightTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [canvasOrientation, setCanvasOrientation] = useState<"portrait" | "landscape">("portrait");
-  const [pageCount, setPageCount] = useState(1);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [aiPanelOpen, setAiPanelOpen] = useState(true);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isUploadingCsv, setIsUploadingCsv] = useState(false);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendationsOpen, setRecommendationsOpen] = useState(false);
+  const recMenuRef = useRef<HTMLDivElement>(null);
+
+  // AI Panel open/close (mutually exclusive with right sidebar)
+  const openAiPanel = useCallback(() => { setAiPanelOpen(true); setRightSidebarOpen(false); }, []);
+  const closeAiPanel = useCallback(() => setAiPanelOpen(false), []);
 
   // Init
   useEffect(() => {
@@ -824,8 +865,21 @@ export default function CanvasUI() {
       setUser({
         name: u.user_metadata?.full_name || u.email?.split("@")[0],
         email: u.email,
-        avatar: u.user_metadata?.avatar_url
+        avatar: u.user_metadata?.avatar_url,
+        id: u.id
       });
+      
+      // Son analizi çek
+      supabase.from("data_analyses")
+        .select("*")
+        .eq("user_id", u.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .then(({ data: analyses }) => {
+          if (analyses && analyses.length > 0) {
+            setRecommendations(analyses[0].recommendations || []);
+          }
+        });
     });
   }, [router]);
 
@@ -833,6 +887,9 @@ export default function CanvasUI() {
     const handler = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
+      }
+      if (recMenuRef.current && !recMenuRef.current.contains(e.target as Node)) {
+        setRecommendationsOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -851,25 +908,82 @@ export default function CanvasUI() {
   };
 
   useEffect(() => {
-    if (!reportId) return;
-    supabase.from("reports").select("*").eq("id", reportId).single()
-      .then(({ data: report, error }) => {
+    const initCanvas = async () => {
+      // Handle addChart if present
+      const addChartParam = searchParams.get("addChart");
+      if (addChartParam) {
+        try {
+          const spec = JSON.parse(decodeURIComponent(addChartParam));
+          setBlocks(prev => [
+            ...prev,
+            {
+              id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+              type: "chart",
+              chartType: spec.type === 'donut' ? 'donut' : spec.type,
+              xCol: spec.x_column,
+              yCol: spec.y_column,
+              name: spec.title,
+              x: 50,
+              y: 50,
+              w: 400,
+              h: 300,
+              z: prev.length + 1,
+              pageIndex: 0
+            } as BlockData
+          ]);
+          // Clean URL
+          window.history.replaceState(null, "", window.location.pathname + (reportId ? `?id=${reportId}` : ""));
+        } catch (e) {
+          console.error("Invalid addChart param", e);
+        }
+      }
+
+      if (reportId) {
+        const { data: report, error } = await supabase.from("reports").select("*").eq("id", reportId).single();
         if (error || !report) return;
         setCurrentReportId(report.id);
         setReportTitle(report.title ?? "İsimsiz Rapor");
         
         const rd = report.raw_data as any;
-        if (rd?.columns && rd?.rows) {
-          setColumns(rd.columns); setData(rd.rows);
+        if (rd?.columns) {
+          setColumns(rd.columns); 
+          if (rd.compressed_rows) {
+            const decompressed = await decompressData(rd.compressed_rows);
+            setData(decompressed);
+          } else if (rd.rows) {
+            setData(rd.rows);
+          }
         }
         const cc = report.chart_config as any;
         if (cc) {
-          if (cc.blocks) history.reset(cc.blocks);
-          if (cc.orientation) setCanvasOrientation(cc.orientation);
-          if (cc.pageCount) setPageCount(cc.pageCount);
+          const savedBlocks: BlockData[] = cc.blocks || [];
+          const savedOrientation: "portrait" | "landscape" = cc.orientation || "portrait";
+          const savedPageCount: number = cc.pageCount || 1;
+          if (!addChartParam) {
+            history.reset({ blocks: savedBlocks, orientation: savedOrientation, pageCount: savedPageCount });
+          } else {
+            // Merge saved blocks with the new chart block appended by addChart handler above
+            setCanvasState(prev => ({ ...prev, blocks: [...savedBlocks, ...prev.blocks], orientation: savedOrientation, pageCount: savedPageCount }));
+          }
         }
-      });
-  }, [reportId]);
+      } else {
+        // Load draft data if arriving from analyzer
+        try {
+          const { loadDraftData, clearDraftData } = await import("../../app/utils/draftStorage");
+          const draftData = await loadDraftData();
+          if (draftData && draftData.columns && draftData.rows) {
+            setColumns(draftData.columns);
+            setData(draftData.rows);
+            // Optionally clear it to prevent stale data on manual refresh, but keeping it is safer for reloads
+            await clearDraftData();
+          }
+        } catch (e) {
+          console.error("Failed to load draft data", e);
+        }
+      }
+    };
+    initCanvas();
+  }, [reportId, searchParams]);
 
   // Helpers
   const showToast = (msg: string, type: "ok" | "error" = "ok") => {
@@ -879,8 +993,9 @@ export default function CanvasUI() {
   const handleSave = useCallback(async () => {
     if (!user) return;
     setSaveStatus("saving");
-    const raw_data = { columns, rows: data };
-    const chart_config = { blocks, orientation: canvasOrientation, pageCount };
+    const compressedRows = await compressData(data);
+    const raw_data = { columns, compressed_rows: compressedRows };
+    const chart_config = { blocks: canvasState.blocks, orientation: canvasState.orientation, pageCount: canvasState.pageCount };
 
     let error;
     if (currentReportId) {
@@ -903,7 +1018,7 @@ export default function CanvasUI() {
       setSaveStatus("saved"); showToast("Rapor kaydedildi ✦");
       setTimeout(() => setSaveStatus("idle"), 3000);
     }
-  }, [user, currentReportId, reportTitle, columns, data, blocks, canvasOrientation, pageCount]);
+  }, [user, currentReportId, reportTitle, columns, data, canvasState]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -933,18 +1048,46 @@ export default function CanvasUI() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const wb = XLSX.read(ev.target?.result, { type: "binary", cellDates: true });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, raw: false, dateNF: "dd.mm.yyyy" });
-      if (json.length) {
-        const cols = json[0] as string[];
-        setColumns(cols); setData(json.slice(1) as any[][]);
-        setSaveStatus("idle");
-      }
-    };
-    reader.readAsBinaryString(file);
+
+    if (uploadedFiles.length >= 3) {
+      showToast("En fazla 3 dosya yükleyebilirsiniz.");
+      return;
+    }
+
+    if (uploadedFiles.some(f => f.name === file.name)) {
+      showToast("Bu dosya zaten yüklü.");
+      return;
+    }
+    
+    setIsUploadingCsv(true);
+    showToast("Verileriniz işleniyor, lütfen bekleyin...");
+    
+    // UI'ın render olabilmesi için ağır okuma işlemini biraz geciktiriyoruz
+    setTimeout(() => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const wb = XLSX.read(ev.target?.result, { type: "binary", cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1, raw: false, dateNF: "dd.mm.yyyy" });
+        if (json.length) {
+          const cols = json[0] as string[];
+          const newFile = {
+            id: "file_" + Date.now(),
+            name: file.name,
+            data: json.slice(1) as any[][],
+            columns: cols
+          };
+          
+          setUploadedFiles(prev => [...prev, newFile]);
+          setActiveFileId(newFile.id);
+          setColumns(newFile.columns);
+          setData(newFile.data);
+          setSaveStatus("idle");
+        }
+        setIsUploadingCsv(false);
+      };
+      reader.readAsBinaryString(file);
+    }, 100);
   };
 
   // Block Operations
@@ -1010,24 +1153,33 @@ export default function CanvasUI() {
   const handleOrientationChange = (newOrientation: "portrait" | "landscape") => {
     const newW = newOrientation === "portrait" ? 794 : 1123;
     const newH = newOrientation === "portrait" ? 1123 : 794;
-    setBlocks(prev => prev.map(b => ({
-      ...b,
-      x: Math.max(0, Math.min(b.x, newW - b.w)),
-      y: Math.max(8, Math.min(b.y, newH - b.h)),
-    })));
-    setCanvasOrientation(newOrientation);
+    // Push orientation + clamped blocks into history atomically
+    setCanvasState(prev => ({
+      ...prev,
+      orientation: newOrientation,
+      blocks: prev.blocks.map(b => ({
+        ...b,
+        x: Math.max(0, Math.min(b.x, newW - b.w)),
+        y: Math.max(8, Math.min(b.y, newH - b.h)),
+      }))
+    }));
     setSaveStatus("idle");
   };
 
   const deletePage = (index: number) => {
     if (pageCount <= 1) return;
-    setBlocks(blocks.filter(b => (b.pageIndex || 0) !== index).map(b => {
-      // Shift indices of pages after the deleted one
-      const pIdx = b.pageIndex || 0;
-      if (pIdx > index) return { ...b, pageIndex: pIdx - 1 };
-      return b;
+    // Atomically remove page blocks + decrement pageCount in history
+    setCanvasState(prev => ({
+      ...prev,
+      pageCount: prev.pageCount - 1,
+      blocks: prev.blocks
+        .filter(b => (b.pageIndex || 0) !== index)
+        .map(b => {
+          const pIdx = b.pageIndex || 0;
+          if (pIdx > index) return { ...b, pageIndex: pIdx - 1 };
+          return b;
+        })
     }));
-    setPageCount(p => p - 1);
     setSelectedBlockId(null);
   };
 
@@ -1110,11 +1262,22 @@ export default function CanvasUI() {
   return (
     <>
       <style>{styles}</style>
+      <div className="noise-overlay" />
       <div className="canvas-root">
+        {isUploadingCsv && (
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 9999, 
+            backgroundColor: "rgba(17, 17, 16, 0.4)", backdropFilter: "blur(2px)",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem", color: "var(--cream)"
+          }}>
+            <Loader2 size={32} style={{ animation: "spin 1s linear infinite" }} />
+            <div style={{ fontSize: "1.2rem", fontWeight: 500, letterSpacing: "0.02em" }}>{t("canvas.processing")}</div>
+          </div>
+        )}
         {/* ── TOPBAR ── */}
         <header className="topbar">
           <div className="topbar-brand">
-            <div className="topbar-logo" onClick={() => router.push("/")} style={{ cursor: "pointer" }} title="Ana Sayfaya Dön">A</div>
+            <div className="topbar-logo" onClick={() => router.push("/")} style={{ cursor: "pointer" }} title={t("common.backHome")}>A</div>
             <div className="topbar-doc">
               <input
                 className="topbar-doc-name"
@@ -1123,42 +1286,137 @@ export default function CanvasUI() {
                 onBlur={handleSave}
               />
               <span className="topbar-doc-status">
-                {saveStatus === "saving" && "Kaydediliyor…"}
-                {saveStatus === "saved"  && "Kaydedildi ✦"}
-                {saveStatus === "error"  && "Hata oluştu"}
-                {saveStatus === "idle"   && "Taslak"}
+                {saveStatus === "saving" && t("canvas.saving")}
+                {saveStatus === "saved"  && t("canvas.saved")}
+                {saveStatus === "error"  && t("canvas.error")}
+                {saveStatus === "idle"   && t("canvas.draft")}
               </span>
             </div>
           </div>
           
           <div className="topbar-breadcrumb">
-            <button onClick={() => router.push("/dashboard")} style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--ink-soft)' }} title="Geri Dön">
+            <button onClick={() => router.push("/dashboard")} style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--ink-soft)' }} title={t("common.goBack")}>
               <ArrowLeft size={14} />
             </button>
-            <a href="/dashboard" style={{ marginLeft: "0.5rem" }}>Projelerim</a>
+            <a href="/dashboard" style={{ marginLeft: "0.5rem" }}>{t("common.projects")}</a>
             <ChevronRight size={12} style={{ opacity: 0.4, margin: "0 0.25rem" }} />
             <span style={{ color: "var(--ink)" }}>{reportTitle}</span>
           </div>
 
           <div className="topbar-actions">
             <div style={{ display: "flex", gap: "0.25rem", marginRight: "1rem", borderRight: "1px solid var(--border)", paddingRight: "1rem" }}>
-              <button className="topbar-tool-btn" onClick={() => history.undo()} disabled={!history.canUndo} title="Geri Al (Ctrl+Z)"><Undo2 size={16} /></button>
-              <button className="topbar-tool-btn" onClick={() => history.redo()} disabled={!history.canRedo} title="İleri Al (Ctrl+Y)"><Redo2 size={16} /></button>
-              <button className={`topbar-tool-btn${isGridSnapEnabled ? " active" : ""}`} onClick={() => setIsGridSnapEnabled(s => !s)} title="Izgaraya Hizala (Snap to Grid)"><Magnet size={16} /></button>
+              <button className="topbar-tool-btn" onClick={() => history.undo()} disabled={!history.canUndo} title={t("common.undo")}><Undo2 size={16} /></button>
+              <button className="topbar-tool-btn" onClick={() => history.redo()} disabled={!history.canRedo} title={t("common.redo")}><Redo2 size={16} /></button>
+              <button className={`topbar-tool-btn${isGridSnapEnabled ? " active" : ""}`} onClick={() => setIsGridSnapEnabled(s => !s)} title={t("canvas.snapToGrid")}><Magnet size={16} /></button>
             </div>
+            <ThemeToggle />
+            <div style={{ marginRight: "0.5rem" }}><LanguageToggle /></div>
             <button className={`topbar-save-btn${saveStatus === "saved" ? " saved" : ""}`} onClick={handleSave} disabled={saveStatus === "saving"}>
               {saveStatus === "saving" ? <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} /> : <Save size={13} />}
-              {saveStatus === "saved" ? "Kaydedildi" : "Kaydet"}
+              {saveStatus === "saved" ? t("canvas.saved") : t("canvas.save")}
             </button>
+            {/* ── RECOMMENDED CHARTS BUTTON + DROPDOWN ── */}
+            <div className="share-menu-wrap" ref={recMenuRef}>
+              <button 
+                className="topbar-save-btn" 
+                onClick={() => setRecommendationsOpen(o => !o)}
+                style={{ 
+                  color: recommendations.length > 0 ? "var(--rose)" : "var(--ink-soft)",
+                  borderColor: recommendations.length > 0 ? "var(--rose)" : "var(--border-strong)",
+                  gap: "0.3rem"
+                }}
+              >
+                <Sparkles size={13} /> {recommendations.length > 0 ? `${t("canvas.recommendations")} (${recommendations.length})` : t("canvas.recommendations")}
+              </button>
+
+              {recommendationsOpen && recommendations.length > 0 && (
+                <div className="share-dropdown" style={{ width: "300px", maxHeight: "400px", overflowY: "auto" }}>
+                  <div className="share-dropdown-header">{t("canvas.aiRecommendations")}</div>
+                  
+                  {recommendations.map((rec) => {
+                    const isAlreadyOnCanvas = blocks.some(b => 
+                      b.name === rec.title && 
+                      b.xCol === rec.x_column && 
+                      b.yCol === rec.y_column
+                    );
+
+                    return (
+                      <div key={rec.id} style={{ padding: "0.75rem", borderBottom: "0.5px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <div style={{ width: "24px", height: "24px", borderRadius: "3px", background: "var(--cream-dark)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--rose)" }}>
+                            {rec.type === 'bar' && <BarChart3 size={14} />}
+                            {rec.type === 'line' && <LineChart size={14} />}
+                            {rec.type === 'pie' && <PieChart size={14} />}
+                            {rec.type === 'scatter' && <MousePointer size={14} />}
+                            {!['bar','line','pie','scatter'].includes(rec.type) && <BarChart3 size={14} />}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--ink)", lineHeight: 1.2 }}>{rec.title}</div>
+                            <div style={{ fontSize: "0.6rem", color: "var(--ink-muted)", marginTop: "2px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                              X: {rec.x_column} | Y: {rec.y_column}
+                            </div>
+                          </div>
+                        </div>
+                        <p style={{ fontSize: "0.7rem", color: "var(--ink-soft)", lineHeight: 1.4 }}>{rec.description}</p>
+                        <button
+                          disabled={isAlreadyOnCanvas}
+                          onClick={() => {
+                          if (isAlreadyOnCanvas) return;
+                            setBlocks(prev => [
+                              ...prev,
+                              {
+                                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                                type: "chart",
+                                chartType: rec.type === 'donut' ? 'donut' : rec.type,
+                                xCol: rec.x_column,
+                                yCol: rec.y_column,
+                                name: rec.title,
+                                x: Math.floor(Math.random() * 100) + 50,
+                                y: Math.floor(Math.random() * 100) + 50,
+                                w: 400,
+                                h: 300,
+                                z: prev.length + 1,
+                                pageIndex: 0
+                              } as BlockData
+                            ]);
+                            setRecommendationsOpen(false);
+                            showToast(t("canvas.addedToCanvas"));
+                          }}
+                          style={{
+                            padding: "0.4rem",
+                            background: isAlreadyOnCanvas ? "var(--cream-dark)" : "var(--ink)",
+                            color: isAlreadyOnCanvas ? "var(--ink-muted)" : "white",
+                            border: "none",
+                            borderRadius: "3px",
+                            fontSize: "0.7rem",
+                            cursor: isAlreadyOnCanvas ? "not-allowed" : "pointer",
+                            transition: "background 0.2s",
+                            fontFamily: "'DM Sans', sans-serif"
+                          }}
+                        >
+                          {isAlreadyOnCanvas ? t("canvas.alreadyOnCanvas") : t("canvas.addToCanvas")}
+                        </button>
+                      </div>
+                    );
+                  })}
+                  {recommendations.length === 0 && (
+                    <div style={{ padding: "1rem", textAlign: "center", fontSize: "0.75rem", color: "var(--ink-muted)" }}>
+                      {t("canvas.noRecommendations")}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* ── SHARE BUTTON + DROPDOWN ── */}
             <div className="share-menu-wrap" ref={shareMenuRef}>
               <button className="share-btn" onClick={() => setShareMenuOpen(o => !o)}>
-                <Share2 size={13} /> Paylaş
+                <Share2 size={13} /> {t("canvas.share")}
               </button>
 
               {shareMenuOpen && (
                 <div className="share-dropdown">
-                  <div className="share-dropdown-header">Dışa Aktar</div>
+                  <div className="share-dropdown-header">{t("canvas.export")}</div>
 
                   {/* PNG */}
                   <button className="share-item" onClick={() => { exportCanvas("png"); setShareMenuOpen(false); }}>
@@ -1166,8 +1424,8 @@ export default function CanvasUI() {
                       <FileImage size={14} style={{ color: "var(--ink-soft)" }} />
                     </div>
                     <div>
-                      <div>PNG Olarak İndir</div>
-                      <div className="share-item-desc">Canvas'ın anında ekran görüntüsü</div>
+                      <div>{t("canvas.downloadPng")}</div>
+                      <div className="share-item-desc">{t("canvas.screenshot")}</div>
                     </div>
                   </button>
 
@@ -1180,13 +1438,13 @@ export default function CanvasUI() {
                       }
                     </div>
                     <div>
-                      <div>PDF Olarak {isGenerating ? "Hazırlanıyor..." : "İndir"}</div>
-                      <div className="share-item-desc">Mod: {pdfMode === "summary-table" ? "Özet + Tablo" : "Otomatik Sayfalama"}</div>
+                      <div>{isGenerating ? t("canvas.preparing") : t("canvas.downloadPdf")}</div>
+                      <div className="share-item-desc">{t("canvas.pdfMode")}</div>
                     </div>
                   </button>
 
                   <div className="share-sep" />
-                  <div className="share-dropdown-header" style={{ borderTop: 'none' }}>Canlı Sunum</div>
+                  <div className="share-dropdown-header" style={{ borderTop: 'none' }}>{t("canvas.presentation")}</div>
 
                   {/* LIVE LINK */}
                   <button className="share-item" onClick={async () => {
@@ -1195,15 +1453,15 @@ export default function CanvasUI() {
                     const link = `${window.location.origin}/r/${idToShare}`;
                     setShareLink(link);
                     navigator.clipboard.writeText(link);
-                    showToast("Canlı sunum bağlantısı kopyalandı ✦");
+                    showToast(t("canvas.linkCopied"));
                     setShareMenuOpen(false);
                   }}>
                     <div className="share-item-icon" style={{ background: "#eaf2f0" }}>
                       <Link2 size={14} style={{ color: "var(--green)" }} />
                     </div>
                     <div>
-                      <div>Canlı Sunum Linki</div>
-                      <div className="share-item-desc">Scrollytelling sayfası oluştur ve kopyala</div>
+                      <div>{t("canvas.liveLink")}</div>
+                      <div className="share-item-desc">{t("canvas.scrollytelling")}</div>
                     </div>
                   </button>
 
@@ -1211,7 +1469,7 @@ export default function CanvasUI() {
                     <div style={{ margin: "0.5rem 0.875rem", padding: "0.4rem 0.5rem", background: "var(--cream)", borderRadius: "3px", fontSize: "0.67rem", color: "var(--ink-muted)", display: "flex", gap: "0.5rem", alignItems: "center" }}>
                       <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shareLink}</span>
                       <button style={{ background: "var(--ink)", color: "var(--cream)", border: "none", padding: "2px 6px", borderRadius: "2px", cursor: "pointer", fontSize: "0.65rem", whiteSpace: "nowrap" }}
-                        onClick={() => { navigator.clipboard.writeText(shareLink); showToast("Kopyalandı ✦"); }}>Kopyala</button>
+                        onClick={() => { navigator.clipboard.writeText(shareLink); showToast(t("canvas.linkCopied")); }}>{t("canvas.copy")}</button>
                     </div>
                   )}
                 </div>
@@ -1224,18 +1482,18 @@ export default function CanvasUI() {
                 className="zoom-btn"
                 onClick={() => setCanvasZoom(z => Math.max(25, z - 10))}
                 disabled={canvasZoom <= 25}
-                title="Uzaklaştır (-)" 
+                title={t("canvas.zoomOut")} 
               >-</button>
               <span
                 className="zoom-label"
                 onClick={() => setCanvasZoom(100)}
-                title="%100'e sıfırla"
+                title={t("canvas.resetZoom")}
               >{canvasZoom}%</span>
               <button
                 className="zoom-btn"
                 onClick={() => setCanvasZoom(z => Math.min(200, z + 10))}
                 disabled={canvasZoom >= 200}
-                title="Yaklaştır (+)"
+                title={t("canvas.zoomIn")}
               >+</button>
             </div>
             
@@ -1254,10 +1512,10 @@ export default function CanvasUI() {
                     Dashboard
                   </button>
                   <button className="user-dropdown-item" onClick={() => router.push("/settings")}>
-                    Ayarlar
+                    {t("nav.settings")}
                   </button>
                   <button className="user-dropdown-item danger" onClick={handleSignOut}>
-                    <LogOut size={14} /> Çıkış Yap
+                    <LogOut size={14} /> {t("nav.signOut")}
                   </button>
                 </div>
               )}
@@ -1270,21 +1528,41 @@ export default function CanvasUI() {
           {/* ── LEFT SIDEBAR ── */}
           <aside className={`sidebar${leftSidebarOpen ? "" : " collapsed"}`}>
             <div className="sidebar-header">
-              <span className="sidebar-header-label"><FileSpreadsheet size={14} /> Veri Kaynağı</span>
-              <button onClick={() => setLeftSidebarOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-muted)", display: "flex", alignItems: "center", padding: "2px" }} title="Paneli Kapat">
+              <span className="sidebar-header-label"><FileSpreadsheet size={14} /> {t("canvas.dataSource")}</span>
+              <button onClick={() => { setLeftSidebarOpen(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-muted)", display: "flex", alignItems: "center", padding: "2px" }} title={t("canvas.closePanel")}>
                 <ChevronLeft size={14} />
               </button>
             </div>
             <div className="sidebar-body">
-              <label className="upload-zone">
-                <div className="upload-zone-icon"><FileSpreadsheet size={22} strokeWidth={1.25} /></div>
-                <div className="upload-zone-label">Excel veya CSV yükleyin</div>
-                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
-              </label>
+              {uploadedFiles.length > 0 ? (
+                <button 
+                  onClick={() => setIsFileModalOpen(true)}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem", background: "var(--cream)", border: "0.5px solid var(--border-strong)", borderRadius: "2px", cursor: "pointer", marginBottom: "1.25rem", textAlign: "left", transition: "all 0.2s" }}
+                >
+                  <div style={{ background: "var(--white)", padding: "6px", borderRadius: "2px", display: "flex", alignItems: "center", justifyContent: "center", border: "0.5px solid var(--border-mid)" }}>
+                    <FileSpreadsheet size={16} style={{ color: "var(--green)" }} />
+                  </div>
+                  <div style={{ flex: 1, overflow: "hidden" }}>
+                    <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {uploadedFiles.find(f => f.id === activeFileId)?.name || "Bilinmeyen Dosya"}
+                    </div>
+                    <div style={{ fontSize: "0.6rem", color: "var(--ink-muted)", marginTop: "2px" }}>
+                      {uploadedFiles.length} {t("canvas.filesUploaded")}
+                    </div>
+                  </div>
+                  <ChevronRight size={14} style={{ color: "var(--ink-muted)" }} />
+                </button>
+              ) : (
+                <label className="upload-zone">
+                  <div className="upload-zone-icon"><FileSpreadsheet size={22} strokeWidth={1.25} /></div>
+                  <div className="upload-zone-label">{t("canvas.clickToUpload")}</div>
+                  <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
+                </label>
+              )}
 
               {columns.length > 0 && (
                 <>
-                  <div className="section-label">Sütunlar ({columns.length})</div>
+                  <div className="section-label">{t("canvas.columns")} ({columns.length})</div>
                   <div style={{ maxHeight: "200px", overflowY: "auto", marginBottom: "1.5rem" }}>
                     {columns.map((col, i) => (
                       <div key={i} style={{ fontSize: "0.75rem", padding: "4px 8px", borderBottom: "0.5px solid var(--border)", color: "var(--ink-soft)" }}>
@@ -1295,7 +1573,7 @@ export default function CanvasUI() {
                 </>
               )}
 
-              <div className="sidebar-header-label" style={{ marginBottom: "0.75rem" }}><Plus size={14} /> Blok Ekle</div>
+              <div className="sidebar-header-label" style={{ marginBottom: "0.75rem" }}><Plus size={14} /> {t("canvas.addBlock")}</div>
               <div className="block-add-grid">
                 {blockTemplates.map((tmpl, i) => (
                   <button key={i} className="block-add-btn" onClick={() => addBlock(tmpl)}>
@@ -1307,12 +1585,21 @@ export default function CanvasUI() {
             </div>
           </aside>
 
-          {/* ── LEFT COLLAPSED TAB ── */}
+          {/* ── LEFT COLLAPSED TAB (Veri) ── */}
           {!leftSidebarOpen && (
-            <button className="sidebar-tab sidebar-tab-left" onClick={() => setLeftSidebarOpen(true)} title="Sol Paneli Aç">
-              <ChevronRight size={18} />
-            </button>
+            <div style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: "4px", zIndex: 20 }}>
+              <button
+                className="sidebar-tab sidebar-tab-left"
+                style={{ position: "static", transform: "none" }}
+                onClick={() => setLeftSidebarOpen(true)}
+                title={t("canvas.openDataPanel")}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           )}
+
+
 
           {/* ── MAIN CANVAS ── */}
           <main className="canvas-main" onClick={(e) => { if (e.target === e.currentTarget) setSelectedBlockId(null); }}>
@@ -1330,7 +1617,7 @@ export default function CanvasUI() {
                     <button 
                       onClick={(e) => { e.stopPropagation(); deletePage(pageIdx); }} 
                       style={{ position: "absolute", right: "-32px", top: "0", background: "var(--white)", border: "1px solid var(--border-mid)", borderRadius: "4px", padding: "6px", cursor: "pointer", color: "var(--ink-muted)", zIndex: 10 }} 
-                      title={`Sayfa ${pageIdx + 1}'i Sil`}
+                      title={`${t("canvas.deletePage")} ${pageIdx + 1}`}
                     >
                       <Trash2 size={14} />
                     </button>
@@ -1363,13 +1650,13 @@ export default function CanvasUI() {
                   >
                     <div className="block-content block-drag-handle">
                       <div className="block-toolbar">
-                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); updateBlock(block.id, { z: (block.z || 1) + 1 }); }} title="Öne Getir"><ArrowUpToLine size={12} /></button>
-                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); updateBlock(block.id, { z: Math.max(0, (block.z || 1) - 1) }); }} title="Arkaya Gönder"><ArrowDownToLine size={12} /></button>
-                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); updateBlock(block.id, { locked: !block.locked }); }} title={block.locked ? "Kilidi Aç" : "Kilitle"}>
+                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); updateBlock(block.id, { z: (block.z || 1) + 1 }); }} title={t("canvas.bringForward")}><ArrowUpToLine size={12} /></button>
+                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); updateBlock(block.id, { z: Math.max(0, (block.z || 1) - 1) }); }} title={t("canvas.sendBackward")}><ArrowDownToLine size={12} /></button>
+                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); updateBlock(block.id, { locked: !block.locked }); }} title={block.locked ? t("canvas.unlock") : t("canvas.lock")}>
                           {block.locked ? <Lock size={12} /> : <Unlock size={12} />}
                         </button>
-                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); copyBlock(block.id); }} title="Çoğalt"><Copy size={12} /></button>
-                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }} title="Sil"><Trash2 size={12} /></button>
+                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); copyBlock(block.id); }} title={t("canvas.duplicate")}><Copy size={12} /></button>
+                        <button className="block-toolbar-btn" onClick={(e) => { e.stopPropagation(); deleteBlock(block.id); }} title={t("canvas.delete")}><Trash2 size={12} /></button>
                       </div>
                       {block.locked && <div className="block-locked-overlay" />}
 
@@ -1387,7 +1674,7 @@ export default function CanvasUI() {
                         <div className="block-kpi">
                           <div className="block-kpi-title">{block.title || "KPI"}</div>
                           <div className="block-kpi-value">{parseRes.kpiSum.toLocaleString("tr-TR")}</div>
-                          <div style={{ fontSize: "0.6rem", color: "var(--ink-muted)", marginTop: "0.5rem" }}>{block.yCol} toplamı</div>
+                          <div style={{ fontSize: "0.6rem", color: "var(--ink-muted)", marginTop: "0.5rem" }}>{block.yCol} {t("canvas.total")}</div>
                         </div>
                       )}
 
@@ -1473,11 +1760,26 @@ export default function CanvasUI() {
             </div>{/* zoom-wrapper */}
           </main>
 
-          {/* ── RIGHT COLLAPSED TAB ── */}
-          {!rightSidebarOpen && (
-            <button className="sidebar-tab sidebar-tab-right" onClick={() => setRightSidebarOpen(true)} title="Sağ Paneli Aç">
-              <ChevronLeft size={18} />
-            </button>
+          {/* ── RIGHT COLLAPSED TABS (Öğeler + AI) ── */}
+          {!rightSidebarOpen && !aiPanelOpen && (
+            <div style={{ position: "absolute", right: 0, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: "4px", zIndex: 20 }}>
+              <button
+                className="sidebar-tab sidebar-tab-right"
+                style={{ position: "static", transform: "none" }}
+                onClick={() => setRightSidebarOpen(true)}
+                title="Öğeler ve Ayarlar Panelini Aç"
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                className="sidebar-tab sidebar-tab-right"
+                style={{ position: "static", transform: "none", color: "var(--rose)", borderTop: "0.5px solid var(--border-mid)" }}
+                onClick={openAiPanel}
+                title="AI Asistanı Aç"
+              >
+                <Sparkles size={15} />
+              </button>
+            </div>
           )}
 
           {/* ── RIGHT SIDEBAR ── */}
@@ -1623,12 +1925,12 @@ export default function CanvasUI() {
                         <span className="prop-label">Görünüm</span>
                         <div className="toggle-row">
                           <span className="toggle-label">Lejant Göster</span>
-                          <input type="checkbox" className="toggle-input" checked={selectedBlock.showLegend} onChange={(e) => updateBlock(selectedBlock.id, { showLegend: e.target.checked })} />
+                          <input type="checkbox" className="toggle-input" checked={selectedBlock.showLegend ?? false} onChange={(e) => updateBlock(selectedBlock.id, { showLegend: e.target.checked })} />
                         </div>
                         {selectedBlock.chartType !== "pie" && selectedBlock.chartType !== "donut" && (
                           <div className="toggle-row">
                             <span className="toggle-label">Izgara Çizgileri</span>
-                            <input type="checkbox" className="toggle-input" checked={selectedBlock.showGrid} onChange={(e) => updateBlock(selectedBlock.id, { showGrid: e.target.checked })} />
+                            <input type="checkbox" className="toggle-input" checked={selectedBlock.showGrid ?? false} onChange={(e) => updateBlock(selectedBlock.id, { showGrid: e.target.checked })} />
                           </div>
                         )}
                       </div>
@@ -1714,7 +2016,99 @@ export default function CanvasUI() {
 
             </div>
           </aside>
+
+          {/* ── AI PANEL ── */}
+          <aside className={`sidebar sidebar-right${aiPanelOpen ? "" : " collapsed"}`} style={{ padding: 0, overflow: "hidden", width: aiPanelOpen ? 400 : 0 }}>
+            <CanvasAiPanel
+              isOpen={aiPanelOpen}
+              onClose={closeAiPanel}
+              columns={columns}
+              data={data}
+              onAddChart={(spec) => {
+                setBlocks(prev => [
+                  ...prev,
+                  {
+                    id: "ai-" + Date.now(),
+                    type: "chart",
+                    chartType: (spec.type === "donut" ? "donut" : spec.type) as any,
+                    xCol: spec.x_column,
+                    yCol: spec.y_column,
+                    name: spec.title,
+                    x: Math.floor(Math.random() * 200) + 50,
+                    y: Math.floor(Math.random() * 100) + 50,
+                    w: 400, h: 300,
+                    z: blocks.length + 1,
+                    pageIndex: 0,
+                    showLegend: true,
+                    showGrid: true,
+                    palette: "rose",
+                    direction: "vertical",
+                  } as any
+                ]);
+                setSaveStatus("idle");
+              }}
+            />
+          </aside>
         </div>
+
+        {/* ── FILE MANAGEMENT MODAL ── */}
+        {isFileModalOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(17,17,16,0.2)", backdropFilter: "blur(2px)" }} onClick={() => setIsFileModalOpen(false)}>
+            <div style={{ background: "var(--white)", width: "100%", maxWidth: "480px", borderRadius: "14px", boxShadow: "0 24px 48px rgba(17,17,16,0.1)", overflow: "hidden", fontFamily: "'DM Sans', sans-serif" }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: "1rem 1.25rem", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--ink)" }}>Yüklü Dosyalar</div>
+                <button onClick={() => setIsFileModalOpen(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-muted)", display: "flex", alignItems: "center" }}>
+                  <X size={16} />
+                </button>
+              </div>
+              <div style={{ padding: "1.25rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {uploadedFiles.map(file => {
+                    const isActive = file.id === activeFileId;
+                    return (
+                      <div 
+                        key={file.id} 
+                        onClick={() => { setActiveFileId(file.id); setColumns(file.columns); setData(file.data); }}
+                        style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.75rem", borderRadius: "6px", border: `1px solid ${isActive ? "var(--ink)" : "var(--border-mid)"}`, background: isActive ? "var(--cream)" : "var(--white)", cursor: "pointer", transition: "all 0.15s" }}
+                        onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--cream-dark)"; }}
+                        onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "var(--white)"; }}
+                      >
+                        <div style={{ background: "var(--white)", padding: "6px", borderRadius: "4px", display: "flex", alignItems: "center", justifyContent: "center", border: "0.5px solid var(--border-mid)" }}>
+                          <FileSpreadsheet size={18} style={{ color: "var(--green)" }} />
+                        </div>
+                        <div style={{ flex: 1, overflow: "hidden" }}>
+                          <div style={{ fontSize: "0.75rem", fontWeight: isActive ? 600 : 500, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {file.name}
+                          </div>
+                          <div style={{ fontSize: "0.65rem", color: "var(--ink-muted)", marginTop: "2px" }}>
+                            {file.columns.length} Sütun • {file.data.length.toLocaleString("tr-TR")} Satır
+                          </div>
+                        </div>
+                        {isActive && <div style={{ fontSize: "0.6rem", background: "var(--ink)", color: "var(--cream)", padding: "2px 6px", borderRadius: "3px", fontWeight: 600 }}>Aktif</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {uploadedFiles.length < 3 && (
+                  <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.85rem", border: "1px dashed var(--border-strong)", borderRadius: "6px", marginTop: "1rem", cursor: "pointer", background: "var(--white)", color: "var(--ink-soft)", fontSize: "0.75rem", fontWeight: 500, transition: "all 0.15s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "var(--cream)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "var(--white)"; }}
+                  >
+                    <Plus size={16} />
+                    Yeni Dosya Yükle ({3 - uploadedFiles.length} hakkınız kaldı)
+                    <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
+                  </label>
+                )}
+                {uploadedFiles.length >= 3 && (
+                  <div style={{ textAlign: "center", fontSize: "0.7rem", color: "var(--ink-muted)", marginTop: "1rem" }}>
+                    Maksimum dosya sınırına ulaştınız (3/3).
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── TOAST ── */}
         {toast && <div className={`toast${toast.type === "error" ? " error" : ""}`}>{toast.msg}</div>}
@@ -1722,5 +2116,13 @@ export default function CanvasUI() {
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </>
+  );
+}
+
+export default function CanvasPage() {
+  return (
+    <Suspense fallback={<div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: "#f8f9fa" }}>Loading...</div>}>
+      <CanvasUI />
+    </Suspense>
   );
 }

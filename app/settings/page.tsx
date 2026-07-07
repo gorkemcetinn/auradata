@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../app/utils/supabase";
 import { LogOut, ArrowLeft, Loader2, Save, User } from "lucide-react";
+import ThemeToggle from "../../app/components/ThemeToggle";
+import LanguageToggle from "../../app/components/LanguageToggle";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
@@ -200,8 +202,10 @@ export default function SettingsPage() {
             <div className="topbar-logo" onClick={() => router.push("/")} title="Ana Sayfaya Dön">A</div>
             <span className="topbar-title">AuraData</span>
           </div>
-          
-          <div className="user-menu" ref={userMenuRef}>
+          <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+            <ThemeToggle />
+            <LanguageToggle />
+            <div className="user-menu" ref={userMenuRef}>
             <div className="user-avatar" onClick={() => setUserMenuOpen(!userMenuOpen)}>
               <AvatarEl />
             </div>
@@ -223,6 +227,7 @@ export default function SettingsPage() {
                 </button>
               </div>
             )}
+          </div>
           </div>
         </header>
 
