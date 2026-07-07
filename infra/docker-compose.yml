@@ -15,19 +15,6 @@ services:
       - GENERIC_TIMEZONE=Europe/Istanbul
     volumes:
       - n8n_data:/home/node/.n8n
-    networks:
-      - auradata
-
-  stats-helper:
-    build: ../services/stats-helper
-    restart: unless-stopped
-    expose:
-      - "5000"
-    networks:
-      - auradata
 
 volumes:
   n8n_data:
-
-networks:
-  auradata:
