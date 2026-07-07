@@ -116,7 +116,7 @@ auradata/
 ### 1 — Clone & install
 
 ```bash
-git clone https://github.com/your-username/auradata.git
+git clone https://github.com/gorkemcetinn/auradata.git
 cd auradata
 npm install
 ```
