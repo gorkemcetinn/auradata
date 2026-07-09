@@ -3,6 +3,25 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* AuraData Design Tokens — Light Mode */
+  --cream:         #faf8f5;
+  --cream-dark:    #f0ebe4;
+  --ink:           #111110;
+  --ink-soft:      #4a4845;
+  --ink-muted:     #999490;
+  --blush:         #e8c4b0;
+  --rose:          #c97b5a;
+  --rose-light:    #f5ede7;
+  --border:        rgba(17,17,16,0.08);
+  --border-mid:    rgba(17,17,16,0.14);
+  --border-strong: rgba(17,17,16,0.22);
+  --white:         #ffffff;
+  --green:         #4a7c6f;
+  --green-light:   #eaf2f0;
+  --blue:          #4a6f7c;
+  --shadow-card:   0 4px 20px rgba(17,17,16,0.04);
+
   --nav-bg: rgba(250, 248, 245, 0.85);
   --cream-a60: rgba(250, 248, 245, 0.6);
   --cream-a15: rgba(250, 248, 245, 0.15);

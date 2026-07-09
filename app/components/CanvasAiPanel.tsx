@@ -302,7 +302,7 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
   const panelStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    background: "var(--white, #fff)",
+    background: "var(--white)",
     display: "flex",
     flexDirection: "column",
     fontFamily: "'DM Sans', sans-serif",
@@ -315,16 +315,16 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
         <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-muted)", display: "flex", alignItems: "center", padding: "2px", marginRight: "8px" }} title="Paneli Kapat">
           <ChevronRight size={14} />
         </button>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "#999490", fontWeight: 400 }}>
-          <Sparkles size={14} style={{ color: "#c97b5a" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-muted)", fontWeight: 400 }}>
+          <Sparkles size={14} style={{ color: "var(--rose)" }} />
           AI Asistanı
         </div>
       </div>
 
       {/* Context strip */}
       {columns.length > 0 && (
-        <div style={{ padding: "0.5rem 1rem", background: "#faf8f5", borderBottom: "0.5px solid rgba(17,17,16,0.08)", fontSize: "0.65rem", color: "#999490", flexShrink: 0 }}>
-          <span style={{ color: "#c97b5a", fontWeight: 500 }}>{columns.length} sütun</span>
+        <div style={{ padding: "0.5rem 1rem", background: "var(--cream-dark)", borderBottom: "0.5px solid var(--border)", fontSize: "0.65rem", color: "var(--ink-muted)", flexShrink: 0 }}>
+          <span style={{ color: "var(--rose)", fontWeight: 500 }}>{columns.length} sütun</span>
           {" · "}
           {data.length.toLocaleString("tr-TR")} satır
           {" · "}
@@ -339,8 +339,8 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
         {messages.length === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
             {isLoadingPrompts ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", color: "#999490", fontSize: "0.72rem", padding: "0.4rem 0.75rem" }}>
-                <Sparkles size={12} style={{ color: "#c97b5a", animation: "spin 2s linear infinite" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", color: "var(--ink-muted)", fontSize: "0.72rem", padding: "0.4rem 0.75rem" }}>
+                <Sparkles size={12} style={{ color: "var(--rose)", animation: "spin 2s linear infinite" }} />
                 Öneriler hazırlanıyor...
               </div>
             ) : quickPrompts.length > 0 ? (
@@ -349,19 +349,19 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
                   key={p}
                   onClick={() => sendMessage(p)}
                   style={{
-                    background: "#faf8f5", border: "0.5px solid rgba(17,17,16,0.14)",
+                    background: "var(--cream)", border: "0.5px solid var(--border-mid)",
                     borderRadius: "12px", padding: "0.4rem 0.75rem",
-                    fontSize: "0.72rem", color: "#4a4845", cursor: "pointer",
+                    fontSize: "0.72rem", color: "var(--ink-soft)", cursor: "pointer",
                     textAlign: "left", transition: "all 0.15s", fontFamily: "'DM Sans', sans-serif"
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#c97b5a")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(17,17,16,0.14)")}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--rose)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border-mid)")}
                 >
                   {p}
                 </button>
               ))
             ) : columns.length === 0 && (
-              <div style={{ fontSize: "0.72rem", color: "#999490", padding: "0.4rem 0.75rem" }}>
+              <div style={{ fontSize: "0.72rem", color: "var(--ink-muted)", padding: "0.4rem 0.75rem" }}>
                 Öneriler için bir CSV dosyası yükleyin.
               </div>
             )}
@@ -372,8 +372,8 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
           <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start", gap: "0.5rem" }}>
             {/* Text bubble */}
             <div style={{
-              background: m.role === "user" ? "#111110" : "#f0ebe4",
-              color: m.role === "user" ? "#faf8f5" : "#111110",
+              background: m.role === "user" ? "var(--ink)" : "var(--cream-dark)",
+              color: m.role === "user" ? "var(--cream)" : "var(--ink)",
               padding: "0.625rem 0.875rem", borderRadius: m.role === "user" ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
               maxWidth: "90%", fontSize: "0.8rem", lineHeight: 1.5,
             }}>
@@ -383,17 +383,17 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
             {/* Chart preview */}
             {m.type === "chart" && m.chart && (
               <div style={{
-                width: "100%", background: "#fff", border: "0.5px solid rgba(17,17,16,0.14)",
+                width: "100%", background: "var(--white)", border: "0.5px solid var(--border-mid)",
                 borderRadius: "10px", overflow: "hidden",
               }}>
                 {/* Chart header */}
-                <div style={{ padding: "0.5rem 0.75rem", borderBottom: "0.5px solid rgba(17,17,16,0.08)", display: "flex", alignItems: "center", gap: "0.375rem" }}>
-                  <div style={{ width: 20, height: 20, borderRadius: "3px", background: "#f0ebe4", display: "flex", alignItems: "center", justifyContent: "center", color: "#c97b5a" }}>
+                <div style={{ padding: "0.5rem 0.75rem", borderBottom: "0.5px solid var(--border)", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                  <div style={{ width: 20, height: 20, borderRadius: "3px", background: "var(--cream-dark)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--rose)" }}>
                     <ChartIcon type={m.chart.type} />
                   </div>
                   <div>
-                    <div style={{ fontSize: "0.72rem", fontWeight: 500, color: "#111110" }}>{m.chart.title}</div>
-                    <div style={{ fontSize: "0.6rem", color: "#999490", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    <div style={{ fontSize: "0.72rem", fontWeight: 500, color: "var(--ink)" }}>{m.chart.title}</div>
+                    <div style={{ fontSize: "0.6rem", color: "var(--ink-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                       X: {m.chart.x_column} · Y: {m.chart.y_column}
                     </div>
                   </div>
@@ -403,22 +403,22 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
                 <div style={{ padding: "0.5rem" }}>
                   {columns.length > 0 && data.length > 0
                     ? <MiniChart chart={m.chart} columns={columns} data={data} />
-                    : <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.72rem", color: "#999490" }}>Veri kaynağı yüklenmeden önizleme yapılamaz</div>
+                    : <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.72rem", color: "var(--ink-muted)" }}>Veri kaynağı yüklenmeden önizleme yapılamaz</div>
                   }
                 </div>
 
                 {/* Add to canvas button */}
-                <div style={{ padding: "0.5rem 0.75rem", borderTop: "0.5px solid rgba(17,17,16,0.08)" }}>
+                <div style={{ padding: "0.5rem 0.75rem", borderTop: "0.5px solid var(--border)" }}>
                   <button
                     onClick={() => onAddChart(m.chart!)}
                     style={{
                       width: "100%", padding: "0.4rem", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.375rem",
-                      background: "#111110", color: "#faf8f5", border: "none", borderRadius: "8px",
+                      background: "var(--ink)", color: "var(--cream)", border: "none", borderRadius: "8px",
                       fontSize: "0.7rem", cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
                       letterSpacing: "0.08em", textTransform: "uppercase", transition: "background 0.15s",
                     }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "#c97b5a")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "#111110")}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--rose)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "var(--ink)")}
                   >
                     <Plus size={12} /> Tuvale Ekle
                   </button>
@@ -430,8 +430,8 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
 
         {/* Loading indicator */}
         {isLoading && (
-          <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "0.375rem", color: "#999490", fontSize: "0.75rem" }}>
-            <Sparkles size={13} style={{ color: "#c97b5a", animation: "spin 2s linear infinite" }} />
+          <div style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: "0.375rem", color: "var(--ink-muted)", fontSize: "0.75rem" }}>
+            <Sparkles size={13} style={{ color: "var(--rose)", animation: "spin 2s linear infinite" }} />
             Düşünüyor…
           </div>
         )}
@@ -440,7 +440,7 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
       </div>
 
       {/* Input */}
-      <div style={{ padding: "0.75rem", borderTop: "0.5px solid rgba(17,17,16,0.08)", display: "flex", gap: "0.5rem", background: "#fff", flexShrink: 0 }}>
+      <div style={{ padding: "0.75rem", borderTop: "0.5px solid var(--border)", display: "flex", gap: "0.5rem", background: "var(--white)", flexShrink: 0 }}>
         <input
           ref={inputRef}
           type="text"
@@ -450,22 +450,22 @@ export default function CanvasAiPanel({ isOpen, onClose, columns, data, onAddCha
           placeholder={columns.length > 0 ? "Grafik çiz veya veriyi analiz et…" : "Önce veri kaynağı yükleyin…"}
           disabled={isLoading}
           style={{
-            flex: 1, padding: "0.5rem 0.75rem", border: "0.5px solid rgba(17,17,16,0.22)",
-            borderRadius: "12px", fontSize: "0.78rem", outline: "none", color: "#111110",
-            fontFamily: "'DM Sans', sans-serif", background: isLoading ? "#faf8f5" : "#fff",
+            flex: 1, padding: "0.5rem 0.75rem", border: "0.5px solid var(--border-strong)",
+            borderRadius: "12px", fontSize: "0.78rem", outline: "none", color: "var(--ink)",
+            fontFamily: "'DM Sans', sans-serif", background: isLoading ? "var(--cream)" : "var(--white)",
           }}
         />
         <button
           onClick={() => sendMessage()}
           disabled={isLoading || !input.trim()}
           style={{
-            background: "#111110", color: "#faf8f5", border: "none", borderRadius: "12px",
+            background: "var(--ink)", color: "var(--cream)", border: "none", borderRadius: "12px",
             width: 34, height: 34, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
             opacity: isLoading || !input.trim() ? 0.4 : 1, transition: "opacity 0.15s, background 0.15s",
             flexShrink: 0,
           }}
-          onMouseEnter={e => { if (!isLoading && input.trim()) e.currentTarget.style.background = "#c97b5a"; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "#111110"; }}
+          onMouseEnter={e => { if (!isLoading && input.trim()) e.currentTarget.style.background = "var(--rose)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "var(--ink)"; }}
         >
           <Send size={15} />
         </button>
