@@ -51,6 +51,11 @@ html.dark {
   --border: rgba(250,248,245,0.1) !important;
   --border-strong: rgba(250,248,245,0.2) !important;
   --border-mid: rgba(250,248,245,0.14) !important;
+  --white: #181817 !important;
+  --rose-light: #2c1a13 !important;
+  --green: #2c594c !important;
+  --green-light: #162c26 !important;
+  --blue: #2c444c !important;
 
   --nav-bg: rgba(17, 17, 16, 0.85) !important;
   --cream-a60: rgba(17, 17, 16, 0.6) !important;

@@ -17,20 +17,7 @@ const styles = `
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --cream:        #faf8f5;
-    --cream-dark:   #f0ebe4;
-    --ink:          #111110;
-    --ink-soft:     #4a4845;
-    --ink-muted:    #999490;
-    --blush:        #e8c4b0;
-    --rose:         #c97b5a;
-    --border:       rgba(17,17,16,0.08);
-    --border-mid:   rgba(17,17,16,0.14);
-    --border-strong:rgba(17,17,16,0.22);
-    --white:        #ffffff;
-    --shadow-card:  0 4px 20px rgba(17,17,16,0.04);
-  }
+
 
   body { background: var(--cream); font-family: 'DM Sans', sans-serif; color: var(--ink); }
 

@@ -104,8 +104,8 @@ export default function FileUpload({ onDataParsed, isLoading = false }: FileUplo
         onDrop={onDrop}
         className={clsx(
           "relative flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg transition-all",
-          isDragging ? "border-[#c97b5a] bg-[#f5ede7]" : "border-[rgba(17,17,16,0.22)] bg-[#faf8f5]",
-          "hover:border-[#c97b5a] hover:bg-[#f5ede7] cursor-pointer"
+          isDragging ? "border-[#c97b5a] bg-[#f5ede7]" : "border-[rgba(17,17,16,0.22)] bg-[var(--cream)]",
+          "hover:border-[var(--rose)] hover:bg-[#f5ede7] cursor-pointer"
         )}
       >
         <input
@@ -117,20 +117,20 @@ export default function FileUpload({ onDataParsed, isLoading = false }: FileUplo
         />
         
         {isLoading ? (
-          <div className="flex flex-col items-center text-[#4a4845]">
-            <Loader2 className="w-10 h-10 mb-4 animate-spin text-[#c97b5a]" />
+          <div className="flex flex-col items-center text-[var(--ink-soft)]">
+            <Loader2 className="w-10 h-10 mb-4 animate-spin text-[var(--rose)]" />
             <p className="font-sans text-sm tracking-wide">Dosya işleniyor...</p>
           </div>
         ) : (
           <>
-            <div className="w-16 h-16 mb-4 rounded-full bg-[#f0ebe4] flex items-center justify-center text-[#999490]">
+            <div className="w-16 h-16 mb-4 rounded-full bg-[var(--cream-dark)] flex items-center justify-center text-[var(--ink-muted)]">
               <UploadCloud className="w-8 h-8" />
             </div>
-            <h3 className="font-serif text-xl text-[#111110] mb-2">Verinizi Yükleyin</h3>
-            <p className="text-[#4a4845] font-sans text-sm text-center max-w-md">
+            <h3 className="font-serif text-xl text-[var(--ink)] mb-2">Verinizi Yükleyin</h3>
+            <p className="text-[var(--ink-soft)] font-sans text-sm text-center max-w-md">
               CSV veya Excel dosyanızı buraya sürükleyin veya bilgisayarınızdan seçmek için tıklayın.
             </p>
-            <div className="mt-6 flex items-center gap-2 text-xs text-[#999490] tracking-widest uppercase">
+            <div className="mt-6 flex items-center gap-2 text-xs text-[var(--ink-muted)] tracking-widest uppercase">
               <FileSpreadsheet className="w-4 h-4" />
               <span>.csv, .xlsx</span>
             </div>
@@ -139,7 +139,7 @@ export default function FileUpload({ onDataParsed, isLoading = false }: FileUplo
       </div>
       
       {error && (
-        <div className="mt-4 p-4 bg-[#fef3f0] border border-[rgba(201,123,90,0.3)] text-[#c97b5a] rounded text-sm font-sans">
+        <div className="mt-4 p-4 bg-[#fef3f0] border border-[rgba(201,123,90,0.3)] text-[var(--rose)] rounded text-sm font-sans">
           {error}
         </div>
       )}
