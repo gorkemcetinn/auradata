@@ -914,6 +914,8 @@ function CanvasUI() {
   }, []);
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "error" } | null>(null);
   
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+
   // Mobile UI State
   const [mobileActivePanel, setMobileActivePanel] = useState<"data" | "settings" | "ai" | null>(null);
 
@@ -1083,7 +1085,7 @@ function CanvasUI() {
         }
       }
     };
-    initCanvas();
+    initCanvas().finally(() => setIsInitialLoading(false));
   }, [reportId, searchParams]);
 
   // Helpers
@@ -1359,6 +1361,16 @@ function CanvasUI() {
   };
 
   const selectedBlock = blocks.find(b => b.id === selectedBlockId);
+
+  if (isInitialLoading) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "100vh", background: "var(--cream)", fontFamily: "'DM Sans', sans-serif" }}>
+        <Loader2 size={32} style={{ animation: "spin 1s linear infinite", color: "var(--rose)", marginBottom: "1rem" }} />
+        <div style={{ fontSize: "0.85rem", color: "var(--ink-soft)", fontWeight: 500, letterSpacing: "0.02em" }}>Yükleniyor...</div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <>
