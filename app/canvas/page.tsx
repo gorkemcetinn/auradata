@@ -2368,6 +2368,13 @@ function CanvasUI() {
                   </>
                 )}
 
+                <div style={{ height: '0.5px', background: 'var(--border)', margin: '1rem 0' }} />
+                <div className="section-label">Görünüm & Dil</div>
+                <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", alignItems: "center" }}>
+                  <ThemeToggle />
+                  <LanguageToggle />
+                </div>
+
                 {selectedBlock && (
                   <>
                     <div className="section-label">Blok Ayarları</div>
