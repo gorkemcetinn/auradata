@@ -623,12 +623,7 @@ export default function LoginPage() {
               </table>
             </div>
 
-            {/* Transform arrow */}
-            <div className="transform-arrow">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8h10M9 4l4 4-4 4" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+
 
             {/* AFTER card */}
             <div className={`after-card${showAfter ? " visible" : ""}`}>

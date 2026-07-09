@@ -329,8 +329,8 @@ const styles = `
   }
   .floating-tag {
     position: absolute;
-    bottom: -16px;
-    right: -16px;
+    bottom: 24px;
+    right: 24px;
     background: var(--ink);
     color: var(--cream);
     font-size: 0.65rem;
