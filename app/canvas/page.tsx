@@ -642,22 +642,33 @@ function parseData(rawData: any[][], allColumns: string[], xCol?: string, yCol?:
 /* ─────────────────────────────────────────────
    ECharts config builder
 ───────────────────────────────────────────── */
-function buildChartOption(labels: string[], values: number[], block: BlockData) {
+function buildChartOption(labels: string[], values: number[], block: BlockData, isDark = false) {
   if (!labels.length) return {};
-  const activeColor = palettes.find((p) => p.key === block.palette)?.color ?? "#111110";
+
+  // Dynamic colors based on dark/light mode
+  const defaultColor = isDark ? "#e09676" : "#111110";
+  const activeColor = palettes.find((p) => p.key === block.palette)?.color ?? defaultColor;
+  const bgColor     = isDark ? "#181817" : "#ffffff";
+  const textColor   = isDark ? "#faf8f5" : "#111110";
+  const mutedColor  = isDark ? "#737373" : "#999490";
+  const softColor   = isDark ? "#b5b7ba" : "#4a4845";
+  const gridColor   = block.showGrid !== false
+    ? (isDark ? "rgba(255,255,255,0.06)" : "rgba(17,17,16,0.06)")
+    : "transparent";
+  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "rgba(17,17,16,0.1)";
+  const pieItemBorder = isDark ? "#181817" : "#ffffff";
+
   const baseFont = { fontFamily: "'DM Sans', sans-serif" };
-  const axisColor = "#999490";
-  const gridColor = block.showGrid !== false ? "rgba(17,17,16,0.06)" : "transparent";
-  
   const isLargeDataset = labels.length > 25;
 
   if (block.chartType === "pie" || block.chartType === "donut") {
     const radius = block.chartType === "donut" ? ["40%", "70%"] : ["0%", "70%"];
     return {
-      legend: block.showLegend !== false ? { orient: "horizontal", bottom: 0, textStyle: { ...baseFont, color: "#4a4845", fontSize: 11 } } : { show: false },
-      tooltip: { trigger: "item", backgroundColor: "#fff", borderColor: "rgba(17,17,16,0.1)", borderWidth: 0.5, textStyle: { ...baseFont, color: "#111110", fontSize: 12 } },
-      series: [{ type: "pie", radius, data: labels.map((l, i) => ({ name: l, value: values[i] })), itemStyle: { borderRadius: 3, borderColor: "#fff", borderWidth: 2 }, label: { ...baseFont, color: "#4a4845", fontSize: 11 } }],
-      color: palettes.map(p => p.color) // Use all palettes for pie slices
+      backgroundColor: "transparent",
+      legend: block.showLegend !== false ? { orient: "horizontal", bottom: 0, textStyle: { ...baseFont, color: softColor, fontSize: 11 } } : { show: false },
+      tooltip: { trigger: "item", backgroundColor: bgColor, borderColor, borderWidth: 0.5, textStyle: { ...baseFont, color: textColor, fontSize: 12 } },
+      series: [{ type: "pie", radius, data: labels.map((l, i) => ({ name: l, value: values[i] })), itemStyle: { borderRadius: 3, borderColor: pieItemBorder, borderWidth: 2 }, label: { ...baseFont, color: softColor, fontSize: 11 } }],
+      color: palettes.map(p => p.color)
     };
   }
 
@@ -667,12 +678,12 @@ function buildChartOption(labels: string[], values: number[], block: BlockData) 
     data: labels, 
     name: isHorizontal ? block.yCol : block.xCol, 
     nameLocation: "end", 
-    nameTextStyle: { ...baseFont, color: axisColor, fontSize: 10 }, 
+    nameTextStyle: { ...baseFont, color: mutedColor, fontSize: 10 }, 
     axisLine: { lineStyle: { color: gridColor } }, 
     axisTick: { show: false }, 
     axisLabel: { 
       ...baseFont, 
-      color: axisColor, 
+      color: mutedColor, 
       fontSize: 10,
       hideOverlap: true,
       rotate: isHorizontal ? 0 : (isLargeDataset ? 45 : 0),
@@ -680,18 +691,18 @@ function buildChartOption(labels: string[], values: number[], block: BlockData) 
     } 
   };
 
-  const valAxis = { type: "value", name: isHorizontal ? block.xCol : block.yCol, nameLocation: "end", nameTextStyle: { ...baseFont, color: axisColor, fontSize: 10 }, splitLine: { lineStyle: { color: gridColor, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...baseFont, color: axisColor, fontSize: 11 } };
+  const valAxis = { type: "value", name: isHorizontal ? block.xCol : block.yCol, nameLocation: "end", nameTextStyle: { ...baseFont, color: mutedColor, fontSize: 10 }, splitLine: { lineStyle: { color: gridColor, type: "dashed" } }, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { ...baseFont, color: mutedColor, fontSize: 11 } };
 
-  // DataZoom adjust for horizontal
   const dZoom = isLargeDataset ? [
     { type: 'inside', [isHorizontal ? 'yAxisIndex' : 'xAxisIndex']: 0, start: 0, end: Math.max((25 / labels.length) * 100, 5) },
     { type: 'slider', [isHorizontal ? 'yAxisIndex' : 'xAxisIndex']: 0, [isHorizontal ? 'right' : 'bottom']: 5, [isHorizontal ? 'width' : 'height']: 16, borderColor: 'transparent', handleSize: '100%', fillerColor: 'rgba(201,123,90,0.2)', textStyle: { color: 'transparent' } }
   ] : [];
 
   const commonAxes = {
+    backgroundColor: "transparent",
     grid: { top: 32, right: 32, bottom: isHorizontal ? 32 : (isLargeDataset ? 60 : (block.showLegend !== false ? 40 : 24)), left: isHorizontal ? 10 : 52, containLabel: true },
-    legend: block.showLegend !== false ? { data: [block.yCol], top: 0, textStyle: { ...baseFont, color: "#4a4845", fontSize: 11 } } : { show: false },
-    tooltip: { trigger: "axis", backgroundColor: "#fff", borderColor: "rgba(17,17,16,0.1)", borderWidth: 0.5, textStyle: { ...baseFont, color: "#111110", fontSize: 12 } },
+    legend: block.showLegend !== false ? { data: [block.yCol], top: 0, textStyle: { ...baseFont, color: softColor, fontSize: 11 } } : { show: false },
+    tooltip: { trigger: "axis", backgroundColor: bgColor, borderColor, borderWidth: 0.5, textStyle: { ...baseFont, color: textColor, fontSize: 12 } },
     dataZoom: dZoom,
     xAxis: isHorizontal ? valAxis : catAxis,
     yAxis: isHorizontal ? catAxis : valAxis,
@@ -703,14 +714,13 @@ function buildChartOption(labels: string[], values: number[], block: BlockData) 
       series: [{ 
         name: block.yCol, data: values, type: "line", smooth: true, symbol: "circle", symbolSize: 6, 
         lineStyle: { color: activeColor, width: 2 }, 
-        itemStyle: { color: activeColor, borderColor: "#fff", borderWidth: 2 }, 
+        itemStyle: { color: activeColor, borderColor: pieItemBorder, borderWidth: 2 }, 
         areaStyle: block.chartType === "area" ? { color: activeColor, opacity: 0.1 } : undefined 
       }] 
     };
   }
   
   if (block.chartType === "scatter") {
-    // For scatter, x is index and y is value just for visual since we map categorical
     const scatterData = labels.map((l, i) => isHorizontal ? [values[i], l] : [l, values[i]]);
     return {
        ...commonAxes,
@@ -1694,8 +1704,8 @@ function CanvasUI() {
                       {block.type === "chart" && parseRes && (
                         <div style={{ width: "100%", height: "100%" }}>
                           <ReactECharts 
-                            option={buildChartOption(parseRes.labels, parseRes.values, block)} 
-                            style={{ height: "100%", width: "100%" }} 
+                            option={buildChartOption(parseRes.labels, parseRes.values, block, typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))} 
+                            style={{ height: "100%", width: "100%", background: "transparent" }} 
                             opts={{ renderer: "canvas" }} 
                           />
                         </div>
