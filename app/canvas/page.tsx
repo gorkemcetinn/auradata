@@ -15,7 +15,8 @@ import {
   Palette, ChevronDown, ChevronRight, ChevronLeft, ArrowLeft, Sparkles, Grid3X3, Save, LogOut, Loader2,
   Plus, Trash2, Copy, FileText, Image as ImageIcon, Maximize, Smartphone, Monitor,
   Share2, FileImage, Link2, LayoutList, Layers,
-  Lock, Unlock, ArrowUpToLine, ArrowDownToLine, Magnet, Undo2, Redo2, Table, Square, Type, Bot, X
+  Lock, Unlock, ArrowUpToLine, ArrowDownToLine, Magnet, Undo2, Redo2, Table, Square, Type, Bot, X,
+  Database, Settings, MessageSquare
 } from "lucide-react";
 import CanvasAiPanel from "../components/CanvasAiPanel";
 import { useLanguage } from "../../contexts/LanguageContext";
@@ -463,6 +464,11 @@ const styles = `
     50% { box-shadow: 0 0 0 6px rgba(201,123,90,0.1); }
   }
 
+  /* Default Hidden for Mobile Only Elements */
+  .mobile-bottom-nav { display: none; }
+  .mobile-modal-overlay { display: none; }
+  .mobile-modal-content { display: none; }
+
   /* ── MOBILE RESPONSIVE ── */
   @media (max-width: 900px) {
     .topbar {
@@ -471,44 +477,88 @@ const styles = `
       padding: 0.5rem 1rem;
       gap: 0.5rem;
     }
-    .topbar-brand {
-      width: 100%;
-      justify-content: space-between;
-    }
-    .topbar-doc {
-      display: none; /* Mobilde çok yer kaplamasın */
-    }
+    .topbar-brand { width: 100%; justify-content: space-between; }
+    .topbar-doc { display: none; }
     .topbar-actions {
-      width: 100%;
-      justify-content: space-between;
-      overflow-x: auto;
-      padding-top: 0.5rem;
-      border-top: 0.5px solid var(--border-mid);
+      width: 100%; justify-content: space-between;
+      overflow-x: auto; padding-top: 0.5rem; border-top: 0.5px solid var(--border-mid);
     }
-    .canvas-body {
+    
+    /* Hide standard sidebars on mobile */
+    .sidebar { display: none !important; }
+    .sidebar-tab { display: none !important; }
+
+    /* Canvas space */
+    .canvas-root { padding-bottom: 60px; /* Space for bottom nav */ }
+    .canvas-main { padding: 1rem; padding-bottom: 120px; }
+
+    /* Mobile floating zoom controls */
+    .zoom-controls {
+      position: fixed;
+      bottom: 80px;
+      right: 1rem;
       flex-direction: column;
-      overflow-y: auto;
+      background: var(--white);
+      box-shadow: 0 4px 16px rgba(17,17,16,0.15);
+      z-index: 100;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
     }
-    .sidebar-left {
-      width: 100%;
-      border-right: none;
-      border-bottom: 0.5px solid var(--border-mid);
-      height: auto;
-      max-height: 140px;
-      overflow-x: auto;
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 1rem;
-      padding: 0.5rem;
+    .zoom-btn { width: 44px; height: 44px; font-size: 1.4rem; font-weight: 400; color: var(--ink); }
+    .zoom-label { padding: 0.75rem 0; font-size: 0.75rem; border-top: 1px solid var(--border-mid); border-bottom: 1px solid var(--border-mid); font-weight: 500; }
+
+    /* Mobile Bottom Navigation */
+    .mobile-bottom-nav {
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      height: 60px; background: var(--white);
+      border-top: 0.5px solid var(--border-strong);
+      display: flex; align-items: center; justify-content: space-around;
+      z-index: 1000; box-shadow: 0 -4px 12px rgba(17,17,16,0.05);
     }
-    .sidebar-right {
-      display: none; /* Mobilde özellikleri kapatıyoruz karmaşayı önlemek için */
+    .mobile-nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      color: var(--ink-muted); font-size: 0.65rem; background: none; border: none;
+      font-family: 'DM Sans', sans-serif; cursor: pointer; transition: color 0.15s;
     }
-    .canvas-main {
-      min-height: 800px;
-      overflow: auto;
+    .mobile-nav-item.active { color: var(--rose); font-weight: 500; }
+    
+    /* Mobile Modal / Bottom Sheet */
+    .mobile-modal-overlay {
+      position: fixed; inset: 0; background: rgba(17,17,16,0.5);
+      z-index: 2000; backdrop-filter: blur(3px);
+      animation: fadeIn 0.2s ease;
+    }
+    .mobile-modal-content {
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      height: 85vh; background: var(--white);
+      border-radius: 20px 20px 0 0; z-index: 2001;
+      display: flex; flex-direction: column;
+      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 -8px 24px rgba(17,17,16,0.1);
+      overflow: hidden;
+    }
+    .mobile-modal-header {
+      padding: 1rem 1.25rem; border-bottom: 0.5px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.9rem; font-weight: 500; color: var(--ink); background: var(--white);
+    }
+    .mobile-modal-body {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      background: var(--cream);
+    }
+    .mobile-modal-body .sidebar-header { display: none; }
+    .mobile-modal-body .sidebar-body { padding: 1rem; }
+    
+    .mobile-modal-body .sidebar {
+      display: flex !important;
+      width: 100% !important;
+      height: 100%;
+      border: none;
+      background: transparent;
     }
   }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 `;
 
 /* ─────────────────────────────────────────────
@@ -856,6 +906,9 @@ function CanvasUI() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "error" } | null>(null);
+  
+  // Mobile UI State
+  const [mobileActivePanel, setMobileActivePanel] = useState<"data" | "settings" | "ai" | null>(null);
 
   // Data State
   const [data, setData] = useState<any[][]>([]);
@@ -2146,6 +2199,249 @@ function CanvasUI() {
                     Maksimum dosya sınırına ulaştınız (3/3).
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MOBILE BOTTOM NAVIGATION ── */}
+        <div className="mobile-bottom-nav">
+          <button className={`mobile-nav-item${mobileActivePanel === "data" ? " active" : ""}`} onClick={() => setMobileActivePanel("data")}>
+            <Database size={20} />
+            Veri
+          </button>
+          <button className={`mobile-nav-item${mobileActivePanel === "settings" ? " active" : ""}`} onClick={() => setMobileActivePanel("settings")}>
+            <Settings size={20} />
+            Öğeler
+          </button>
+          <button className={`mobile-nav-item${mobileActivePanel === "ai" ? " active" : ""}`} onClick={() => setMobileActivePanel("ai")}>
+            <MessageSquare size={20} />
+            AI Asistan
+          </button>
+        </div>
+
+        {/* ── MOBILE MODALS / BOTTOM SHEETS ── */}
+        {mobileActivePanel === "data" && (
+          <div className="mobile-modal-overlay" onClick={() => setMobileActivePanel(null)}>
+            <div className="mobile-modal-content" onClick={e => e.stopPropagation()}>
+              <div className="mobile-modal-header">
+                Veri Kaynağı
+                <button onClick={() => setMobileActivePanel(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-muted)", padding: "2px" }}><X size={18} /></button>
+              </div>
+              <div className="mobile-modal-body">
+                {/* Clone the Data Sidebar body logic here or refactor into component. To keep it simple, we duplicate the body for mobile view. */}
+                {uploadedFiles.length > 0 ? (
+                  <button 
+                    onClick={() => setIsFileModalOpen(true)}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem", background: "var(--cream)", border: "0.5px solid var(--border-strong)", borderRadius: "2px", cursor: "pointer", marginBottom: "1.25rem", textAlign: "left" }}
+                  >
+                    <div style={{ background: "var(--white)", padding: "6px", borderRadius: "2px", display: "flex", alignItems: "center", justifyContent: "center", border: "0.5px solid var(--border-mid)" }}>
+                      <FileSpreadsheet size={16} style={{ color: "var(--green)" }} />
+                    </div>
+                    <div style={{ flex: 1, overflow: "hidden" }}>
+                      <div style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {uploadedFiles.find(f => f.id === activeFileId)?.name || "Bilinmeyen Dosya"}
+                      </div>
+                      <div style={{ fontSize: "0.6rem", color: "var(--ink-muted)", marginTop: "2px" }}>
+                        {uploadedFiles.length} {t("canvas.filesUploaded")}
+                      </div>
+                    </div>
+                    <ChevronRight size={14} style={{ color: "var(--ink-muted)" }} />
+                  </button>
+                ) : (
+                  <label className="upload-zone">
+                    <div className="upload-zone-icon"><FileSpreadsheet size={22} strokeWidth={1.25} /></div>
+                    <div className="upload-zone-label">{t("canvas.clickToUpload")}</div>
+                    <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFileUpload} style={{ display: "none" }} />
+                  </label>
+                )}
+
+                {columns.length > 0 && (
+                  <>
+                    <div className="section-label">{t("canvas.columns")} ({columns.length})</div>
+                    <div style={{ maxHeight: "200px", overflowY: "auto", marginBottom: "1.5rem" }}>
+                      {columns.map((col, i) => (
+                        <div key={i} style={{ fontSize: "0.75rem", padding: "4px 8px", borderBottom: "0.5px solid var(--border)", color: "var(--ink-soft)" }}>
+                          {col}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div className="sidebar-header-label" style={{ marginBottom: "0.75rem" }}><Plus size={14} /> {t("canvas.addBlock")}</div>
+                <div className="block-add-grid">
+                  {blockTemplates.map((tmpl, i) => (
+                    <button key={i} className="block-add-btn" onClick={() => { addBlock(tmpl); setMobileActivePanel(null); }}>
+                      <tmpl.icon size={18} strokeWidth={1.5} />
+                      <span className="block-add-label">{tmpl.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mobileActivePanel === "settings" && (
+          <div className="mobile-modal-overlay" onClick={() => setMobileActivePanel(null)}>
+            <div className="mobile-modal-content" onClick={e => e.stopPropagation()}>
+              <div className="mobile-modal-header">
+                Öğeler & Ayarlar
+                <button onClick={() => setMobileActivePanel(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-muted)", padding: "2px" }}><X size={18} /></button>
+              </div>
+              <div className="mobile-modal-body">
+                {/* Clone the Right Sidebar body here so it renders in mobile modal safely */}
+                <div className="section-label">Canvas Öğeleri ({blocks.length})</div>
+                {blocks.length === 0 ? (
+                  <div className="items-empty">Henüz öğe eklenmedi.</div>
+                ) : (
+                  <div className="items-list">
+                    {blocks.map(block => {
+                      const BlockIcon = getBlockIcon(block);
+                      const isActive = selectedBlockId === block.id;
+                      return (
+                        <div key={block.id} className={`item-row${isActive ? " active" : ""}`}
+                          onClick={() => { setSelectedBlockId(block.id); highlightBlock(block.id); }}>
+                          <div className="item-icon"><BlockIcon size={13} /></div>
+                          <input className="item-name"
+                            value={block.name || getDefaultBlockName(block)}
+                            onChange={e => updateBlock(block.id, { name: e.target.value })}
+                            onClick={e => e.stopPropagation()} />
+                          <button className="item-delete" onClick={e => { e.stopPropagation(); deleteBlock(block.id); }} title="Sil">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div style={{ height: '0.5px', background: 'var(--border)', margin: '1rem 0' }} />
+
+                {!selectedBlock && (
+                  <>
+                    <div className="section-label">Sayfa Ayarları</div>
+                    <div className="prop-group">
+                      <span className="prop-label">Sayfa Yönü</span>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <button 
+                          onClick={() => handleOrientationChange("portrait")}
+                          style={{ flex: 1, padding: "0.5rem", background: canvasOrientation==="portrait" ? "var(--ink)" : "var(--cream)", color: canvasOrientation==="portrait" ? "var(--cream)" : "var(--ink)", border: "1px solid var(--border-mid)", borderRadius: "3px", cursor: "pointer", fontSize: "0.75rem" }}>
+                          Dikey
+                        </button>
+                        <button 
+                          onClick={() => handleOrientationChange("landscape")}
+                          style={{ flex: 1, padding: "0.5rem", background: canvasOrientation==="landscape" ? "var(--ink)" : "var(--cream)", color: canvasOrientation==="landscape" ? "var(--cream)" : "var(--ink)", border: "1px solid var(--border-mid)", borderRadius: "3px", cursor: "pointer", fontSize: "0.75rem" }}>
+                          Yatay
+                        </button>
+                      </div>
+                    </div>
+                    <div className="prop-group" style={{ marginTop: "1rem" }}>
+                      <span className="prop-label">Sayfa Yönetimi</span>
+                      <div style={{ fontSize: "0.8rem", color: "var(--ink-soft)", display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--cream)", padding: "0.5rem", borderRadius: "4px", border: "1px solid var(--border-mid)" }}>
+                        <span>Toplam Sayfa: <b>{pageCount}</b></span>
+                        <button onClick={() => setPageCount(p => p + 1)} style={{ background: "none", border: "none", color: "var(--rose)", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <Plus size={14} /> Ekle
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {selectedBlock && (
+                  <>
+                    <div className="section-label">Blok Ayarları</div>
+                    {/* Simplified properties block for mobile here */}
+                    {pageCount > 1 && (
+                      <div className="prop-group">
+                        <span className="prop-label">Sayfa Numarası</span>
+                        <select className="prop-select" value={selectedBlock.pageIndex || 0} onChange={e => updateBlock(selectedBlock.id, { pageIndex: parseInt(e.target.value) })}>
+                          {Array.from({ length: pageCount }).map((_, i) => (
+                            <option key={i} value={i}>Sayfa {i + 1}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {(selectedBlock.type === "chart" || selectedBlock.type === "kpi" || selectedBlock.type === "table") && (
+                      <div className="prop-group">
+                        <span className="prop-label">Veri Bağlantısı (X)</span>
+                        <select className="prop-select" value={selectedBlock.xCol || ""} onChange={e => updateBlock(selectedBlock.id, { xCol: e.target.value })}>
+                          {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                        <span className="prop-label">Veri Bağlantısı (Y)</span>
+                        <select className="prop-select" value={selectedBlock.yCol || ""} onChange={e => updateBlock(selectedBlock.id, { yCol: e.target.value })}>
+                          {columns.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    {selectedBlock.type === "chart" && (
+                      <>
+                        <div className="prop-group">
+                          <span className="prop-label">Grafik Tipi</span>
+                          <select className="prop-select" value={selectedBlock.chartType || "bar"} onChange={e => updateBlock(selectedBlock.id, { chartType: e.target.value as any })}>
+                            <option value="bar">Sütun (Bar)</option>
+                            <option value="line">Çizgi (Line)</option>
+                            <option value="area">Alan (Area)</option>
+                            <option value="pie">Pasta (Pie)</option>
+                            <option value="donut">Donut</option>
+                            <option value="scatter">Dağılım (Scatter)</option>
+                          </select>
+                        </div>
+                        <div className="prop-group">
+                          <span className="prop-label">Renk Paleti</span>
+                          <div className="palette-row">
+                            {palettes.map((p) => (
+                              <button key={p.key} className={`swatch${selectedBlock.palette === p.key ? " active" : ""}`} style={{ background: p.color }} title={p.label} onClick={() => updateBlock(selectedBlock.id, { palette: p.key })} />
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {mobileActivePanel === "ai" && (
+          <div className="mobile-modal-overlay" onClick={() => setMobileActivePanel(null)}>
+            <div className="mobile-modal-content" onClick={e => e.stopPropagation()}>
+              <div className="mobile-modal-header" style={{ borderBottom: "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <Sparkles size={16} style={{ color: "var(--rose)" }} /> AI Asistan
+                </div>
+                <button onClick={() => setMobileActivePanel(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-muted)", padding: "2px" }}><X size={18} /></button>
+              </div>
+              <div className="mobile-modal-body" style={{ flex: 1, overflow: "hidden", padding: 0 }}>
+                <CanvasAiPanel
+                  isOpen={true}
+                  onClose={() => setMobileActivePanel(null)}
+                  columns={columns}
+                  data={data}
+                  onAddChart={(spec) => {
+                    setBlocks(prev => [
+                      ...prev,
+                      {
+                        id: "ai-" + Date.now(),
+                        type: "chart",
+                        chartType: (spec.type === "donut" ? "donut" : spec.type) as any,
+                        xCol: spec.x_column,
+                        yCol: spec.y_column,
+                        name: spec.title,
+                        x: Math.floor(Math.random() * 50) + 10,
+                        y: Math.floor(Math.random() * 100) + 50,
+                        w: 320, h: 280,
+                        z: blocks.length + 1,
+                        pageIndex: 0,
+                        showLegend: true, showGrid: true, palette: "rose", direction: "vertical",
+                      } as any
+                    ]);
+                    setSaveStatus("idle");
+                    setMobileActivePanel(null);
+                  }}
+                />
               </div>
             </div>
           </div>
