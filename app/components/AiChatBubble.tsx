@@ -97,7 +97,15 @@ export default function AiChatBubble() {
               padding: "10px 14px", borderRadius: "8px", maxWidth: "80%",
               fontSize: "0.85rem", lineHeight: "1.4"
             }}>
-              {m.text}
+              {m.text.split(/(https?:\/\/[^\s]+)/g).map((part, j) => 
+                /(https?:\/\/[^\s]+)/.test(part) ? (
+                  <a key={j} href={part} target="_blank" rel="noopener noreferrer" style={{ color: m.role === "user" ? "white" : "#0066cc", textDecoration: "underline" }}>
+                    {part}
+                  </a>
+                ) : (
+                  part
+                )
+              )}
             </div>
           ))}
           {isLoading && (
