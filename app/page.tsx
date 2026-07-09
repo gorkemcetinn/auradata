@@ -1,4 +1,4 @@
-"use client"; 
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -821,7 +821,7 @@ export default function AuraDataLandingPage() {
             <li><a href="#templates">{t("nav.templates")}</a></li>
             <li><a href="#pricing">{t("nav.pricing")}</a></li>
           </ul>
-          
+
           <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
             <ThemeToggle />
             <LanguageToggle />
@@ -830,7 +830,7 @@ export default function AuraDataLandingPage() {
                 <div className="user-avatar" onClick={() => setUserMenuOpen(!userMenuOpen)}>
                   <AvatarEl />
                 </div>
-                
+
                 {userMenuOpen && (
                   <div className="user-dropdown">
                     <div className="user-dropdown-header">
@@ -907,7 +907,6 @@ export default function AuraDataLandingPage() {
                     <span className="mockup-metric-label">Müşteri</span>
                   </div>
                 </div>
-                <div className="floating-tag">PDF'e hazır ✦</div>
               </div>
             </div>
           </div>
