@@ -485,7 +485,12 @@ const styles = `
     }
     
     /* Hide standard sidebars on mobile */
-    .sidebar { display: none !important; }
+    .sidebar, .sidebar-right, aside.sidebar { 
+      display: none !important; 
+      width: 0 !important; 
+      opacity: 0 !important; 
+      pointer-events: none !important; 
+    }
     .sidebar-tab { display: none !important; }
 
     /* Canvas space */
@@ -524,15 +529,17 @@ const styles = `
     
     /* Mobile Modal / Bottom Sheet */
     .mobile-modal-overlay {
+      display: block !important;
       position: fixed; inset: 0; background: rgba(17,17,16,0.5);
       z-index: 2000; backdrop-filter: blur(3px);
       animation: fadeIn 0.2s ease;
     }
     .mobile-modal-content {
+      display: flex !important;
       position: fixed; bottom: 0; left: 0; width: 100%;
       height: 85vh; background: var(--white);
       border-radius: 20px 20px 0 0; z-index: 2001;
-      display: flex; flex-direction: column;
+      flex-direction: column;
       animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 -8px 24px rgba(17,17,16,0.1);
       overflow: hidden;
