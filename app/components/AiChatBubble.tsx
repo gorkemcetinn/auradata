@@ -97,15 +97,37 @@ export default function AiChatBubble() {
               padding: "10px 14px", borderRadius: "8px", maxWidth: "80%",
               fontSize: "0.85rem", lineHeight: "1.4"
             }}>
-              {m.text.split(/(https?:\/\/[^\s]+)/g).map((part, j) => 
-                /(https?:\/\/[^\s]+)/.test(part) ? (
-                  <a key={j} href={part} target="_blank" rel="noopener noreferrer" style={{ color: m.role === "user" ? "white" : "#0066cc", textDecoration: "underline" }}>
-                    {part}
-                  </a>
-                ) : (
-                  part
-                )
-              )}
+              {m.text.split(/(\[[^\]]+\]\(https?:\/\/[^\s)]+\))/g).map((part, j) => {
+                const match = part.match(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/);
+                if (match) {
+                  const linkText = match[1];
+                  const linkUrl = match[2];
+                  // Eğer link kendi sitemize gidiyorsa aynı sekmede aç (sayfayı kaydır)
+                  const isExternal = !linkUrl.includes("auradata");
+                  return (
+                    <a 
+                      key={j} 
+                      href={linkUrl} 
+                      target={isExternal ? "_blank" : "_self"} 
+                      rel={isExternal ? "noopener noreferrer" : undefined} 
+                      style={{ color: m.role === "user" ? "white" : "#0066cc", textDecoration: "underline" }}
+                    >
+                      {linkText}
+                    </a>
+                  );
+                }
+                
+                // Normal raw URL kontrolü (markdown olmayan)
+                return part.split(/(https?:\/\/[^\s)]+)/g).map((subpart, k) => 
+                  /(https?:\/\/[^\s)]+)/.test(subpart) ? (
+                    <a key={`${j}-${k}`} href={subpart} target="_blank" rel="noopener noreferrer" style={{ color: m.role === "user" ? "white" : "#0066cc", textDecoration: "underline" }}>
+                      {subpart}
+                    </a>
+                  ) : (
+                    subpart
+                  )
+                );
+              })}
             </div>
           ))}
           {isLoading && (
