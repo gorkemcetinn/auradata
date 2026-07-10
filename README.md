@@ -149,6 +149,9 @@ Handles deep-dive questions specific to the interactive canvas dashboard.
   - Port 5678 is open via iptables and Oracle Security Lists.
   - Operates 24/7 without needing an active SSH session.
 
+<img width="1529" height="472" alt="image" src="https://github.com/user-attachments/assets/3c2978e5-d3dc-4b9d-9adb-d41888f514bc" />
+
+
 ## License
 
 MIT © 2026 AuraData
