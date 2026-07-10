@@ -2,6 +2,8 @@
 
 # ✦ AuraData
 
+Live Demo: https://auradata.vercel.app/ 
+
 **Upload a dataset. Get instant AI-powered chart recommendations and editorial narratives.**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)](https://nextjs.org)
