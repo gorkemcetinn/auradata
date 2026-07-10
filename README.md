@@ -151,4 +151,4 @@ Handles deep-dive questions specific to the interactive canvas dashboard.
 
 ## License
 
-MIT © 2024 AuraData
+MIT © 2026 AuraData
